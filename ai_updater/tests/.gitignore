@@ -1,0 +1,2 @@
+# Ignore ai_generated folders in all scenario directories
+scenario-*/ai_generated/

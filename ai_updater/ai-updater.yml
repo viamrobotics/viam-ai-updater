@@ -1,0 +1,57 @@
+name: Update SDK based on proto changes + open PR
+#For local testing run: act workflow_run -W 'ai_updater/' -s GOOGLE_API_KEY --container-architecture linux/amd64 --bind
+
+on:
+  workflow_dispatch:
+  workflow_run:
+    workflows: [test]
+    types: [completed]
+    branches: [workflow/update-proto]
+
+jobs:
+  run-ai-updater:
+    #if: github.event.workflow_run.conclusion == 'failure' && github.repository_owner == 'viamrobotics' commented out for testing
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          #ref: ${{ github.event.workflow_run.head_sha }}
+          token: ${{ secrets.REPO_READ_TOKEN }}
+
+      - name: Install tree command
+        run: sudo apt-get update && sudo apt-get install -y tree
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v3
+        with:
+          enable-cache: true
+
+      - name: Setup Python
+        run: uv python install
+
+      - name: Create virtual environment (for testing)
+        run: uv venv
+
+      - name: Install dependencies
+        run: |
+          source .venv/bin/activate
+          pip install google-genai pydantic
+
+      - name: Get diff output
+        run: |
+          DIFF_OUTPUT=$(git diff workflow/update-proto~1 workflow/update-proto -- src/viam/gen/component)
+          echo "ZSH_DIFF_OUTPUT<<EOF" >> $GITHUB_ENV
+          echo "$DIFF_OUTPUT" >> $GITHUB_ENV
+          echo "EOF" >> $GITHUB_ENV
+          TREE_OUTPUT=$(tree src/viam)
+          echo "TREE_OUTPUT<<EOF" >> $GITHUB_ENV
+          echo "$TREE_OUTPUT" >> $GITHUB_ENV
+          echo "EOF" >> $GITHUB_ENV
+
+      - name: Run ai-updater
+        env:
+          GOOGLE_API_KEY: ${{ secrets.GOOGLE_API_KEY }}
+          ZSH_DIFF_OUTPUT: ${{ env.ZSH_DIFF_OUTPUT }}
+        run: |
+          cd ai_updater
+          python ai_updater.py --debug --noai
