@@ -2,3 +2,4 @@ __pycache__/
 .pytest_cache/
 ai_updater/*.txt
 ai_updater/scenario-*/ai_generated/
+.vscode/launch.json

@@ -1,0 +1,29 @@
+{
+  "[python]": {
+    "diffEditor.ignoreTrimWhitespace": false,
+    "editor.formatOnSave": true,
+    "editor.formatOnType": true,
+    "editor.defaultFormatter": "charliermarsh.ruff",
+    "editor.wordBasedSuggestions": "off",
+    "editor.rulers": [
+      {
+        "color": "#777777",
+        "column": 140
+      }
+    ]
+  },
+  "files.trimTrailingWhitespace": true,
+  "files.insertFinalNewline": true,
+  "cSpell.words": [
+    "frombytes",
+    "grpclib",
+    "klass",
+    "pointcloud",
+    "RSDK",
+    "segmenters",
+    "TFLITE",
+    "tobytes",
+    "viam",
+    "viamrobotics"
+  ]
+}
