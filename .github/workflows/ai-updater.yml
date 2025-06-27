@@ -1,5 +1,4 @@
 name: Update SDK based on proto changes + open PR
-#For local testing run: act workflow_run -W 'ai_updater/' -s GOOGLE_API_KEY --container-architecture linux/amd64 --bind
 
 on:
   workflow_dispatch:
@@ -11,6 +10,8 @@ on:
         type: string
     secrets:
       GOOGLE_API_KEY:
+        required: true
+      GITHUB_TOKEN:
         required: true
 
 #  workflow_run:
