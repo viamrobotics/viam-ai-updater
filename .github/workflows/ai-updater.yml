@@ -30,6 +30,7 @@ jobs:
           ref: ${{ inputs.target_branch }}
           fetch-depth: 2
           token: ${{ secrets.GITHUB_TOKEN }}
+          path: sdk
 
       - name: Checkout ai_updater
         uses: actions/checkout@v4
@@ -62,7 +63,7 @@ jobs:
           GOOGLE_API_KEY: ${{ secrets.GOOGLE_API_KEY }}
         run: |
           cd viam-ai-updater/ai_updater
-          uv run python ai_updater.py --debug --work $GITHUB_WORKSPACE
+          uv run python ai_updater.py --debug --work $GITHUB_WORKSPACE/sdk
 
       - name: Add + Commit + Open PR
         id: cpr
