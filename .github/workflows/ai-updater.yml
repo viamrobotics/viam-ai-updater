@@ -23,9 +23,17 @@ jobs:
   run-ai-updater:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout SDK
+        uses: actions/checkout@v4
         with:
           ref: ${{ inputs.target_branch }}
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Checkout ai_updater
+        uses: actions/checkout@v4
+        with:
+          repository: gabegottlob/viam-ai-updater
+          path: viam-ai-updater
           token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Install tree command
@@ -45,13 +53,13 @@ jobs:
       - name: Install dependencies
         run: |
           source .venv/bin/activate
-          pip install google-genai pydantic
+          uv pip install google-genai pydantic
 
       - name: Run ai-updater
         env:
           GOOGLE_API_KEY: ${{ secrets.GOOGLE_API_KEY }}
         run: |
-          cd ai_updater
+          cd viam-ai-updater/ai_updater
           python ai_updater.py --debug --test "${ GITHUB_WORKSPACE }"
 
       - name: Add + Commit + Open PR
