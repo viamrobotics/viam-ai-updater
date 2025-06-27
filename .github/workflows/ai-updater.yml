@@ -3,20 +3,29 @@ name: Update SDK based on proto changes + open PR
 
 on:
   workflow_dispatch:
-  workflow_run:
-    workflows: [test]
-    types: [completed]
-    branches: [workflow/update-proto]
+  workflow_call:
+    inputs:
+      target_branch:
+        description: "The branch to update"
+        required: true
+        type: string
+    secrets:
+      GOOGLE_API_KEY:
+        required: true
+
+#  workflow_run:
+#    workflows: [test]
+#    types: [completed]
+#    branches: [workflow/update-proto]
 
 jobs:
   run-ai-updater:
-    #if: github.event.workflow_run.conclusion == 'failure' && github.repository_owner == 'viamrobotics' commented out for testing
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
         with:
-          #ref: ${{ github.event.workflow_run.head_sha }}
-          token: ${{ secrets.REPO_READ_TOKEN }}
+          ref: ${{ inputs.target_branch }}
+          token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Install tree command
         run: sudo apt-get update && sudo apt-get install -y tree
@@ -37,21 +46,23 @@ jobs:
           source .venv/bin/activate
           pip install google-genai pydantic
 
-      - name: Get diff output
-        run: |
-          DIFF_OUTPUT=$(git diff workflow/update-proto~1 workflow/update-proto -- src/viam/gen/component)
-          echo "ZSH_DIFF_OUTPUT<<EOF" >> $GITHUB_ENV
-          echo "$DIFF_OUTPUT" >> $GITHUB_ENV
-          echo "EOF" >> $GITHUB_ENV
-          TREE_OUTPUT=$(tree src/viam)
-          echo "TREE_OUTPUT<<EOF" >> $GITHUB_ENV
-          echo "$TREE_OUTPUT" >> $GITHUB_ENV
-          echo "EOF" >> $GITHUB_ENV
-
       - name: Run ai-updater
         env:
           GOOGLE_API_KEY: ${{ secrets.GOOGLE_API_KEY }}
-          ZSH_DIFF_OUTPUT: ${{ env.ZSH_DIFF_OUTPUT }}
         run: |
           cd ai_updater
-          python ai_updater.py --debug --noai
+          python ai_updater.py --debug --test "${ GITHUB_WORKSPACE }"
+
+      - name: Add + Commit + Open PR
+        id: cpr
+        uses: peter-evans/create-pull-request@v7
+        with:
+          commit-message: '[WORKFLOW] AI update based on proto changes'
+          branch: ${{ inputs.target_branch }}
+          delete-branch: true
+          base: main
+          title: AI update based on proto changes
+          body: This is an AI-generated PR to update the SDK based on proto changes.
+          assignees: gabegottlob
+          reviewers: gabegottlob
+          token: ${{ secrets.GITHUB_TOKEN }}
