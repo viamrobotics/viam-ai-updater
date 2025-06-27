@@ -19,6 +19,7 @@ on:
 #    types: [completed]
 #    branches: [workflow/update-proto]
 
+
 jobs:
   run-ai-updater:
     runs-on: ubuntu-latest
@@ -27,6 +28,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           ref: ${{ inputs.target_branch }}
+          fetch-depth: 2
           token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Checkout ai_updater
@@ -60,7 +62,7 @@ jobs:
           GOOGLE_API_KEY: ${{ secrets.GOOGLE_API_KEY }}
         run: |
           cd viam-ai-updater/ai_updater
-          python ai_updater.py --debug --test "${ GITHUB_WORKSPACE }"
+          uv run python ai_updater.py --debug --test $GITHUB_WORKSPACE
 
       - name: Add + Commit + Open PR
         id: cpr
