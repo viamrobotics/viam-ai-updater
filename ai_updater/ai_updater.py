@@ -272,10 +272,14 @@ class AIUpdater:
             if os.path.exists(os.path.join(scenario_dir, "proto_diff.txt")):
                 with open(os.path.join(scenario_dir, "proto_diff.txt"), "r") as f:
                     git_diff_output = f.read()
-
-        git_diff_output = subprocess.check_output(["git", "diff", "HEAD~1", "HEAD", "--", git_diff_dir, ":!*_pb2.py"],
-                                                    text=True,
-                                                    cwd=self.sdk_root_dir)
+            else:
+                git_diff_output = subprocess.check_output(["git", "diff", "HEAD~1", "HEAD", "--", git_diff_dir, ":!*_pb2.py"],
+                                                        text=True,
+                                                        cwd=self.sdk_root_dir)
+        else:
+            git_diff_output = subprocess.check_output(["git", "diff", "HEAD~1", "HEAD", "--", git_diff_dir, ":!*_pb2.py"],
+                                                        text=True,
+                                                        cwd=self.sdk_root_dir)
 
         if self.args.debug:
             if self.args.work:
