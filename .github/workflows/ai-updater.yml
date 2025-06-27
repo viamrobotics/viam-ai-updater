@@ -11,6 +11,8 @@ on:
     secrets:
       GOOGLE_API_KEY:
         required: true
+      GITHUB_TOKEN:
+        required: true
 
 #  workflow_run:
 #    workflows: [test]
@@ -24,7 +26,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           ref: ${{ inputs.target_branch }}
-          token: ${{ github.token }}
+          token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Install tree command
         run: sudo apt-get update && sudo apt-get install -y tree
@@ -64,4 +66,4 @@ jobs:
           body: This is an AI-generated PR to update the SDK based on proto changes.
           assignees: gabegottlob
           reviewers: gabegottlob
-          token: ${{ github.token }}
+          token: ${{ secrets.GITHUB_TOKEN }}
