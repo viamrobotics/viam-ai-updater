@@ -145,6 +145,8 @@ class AIUpdater:
         if self.args.debug:
             debug_file_path = os.path.join(self.current_dir, "relevant_context.txt")
             self.write_to_file(debug_file_path, relevant_context)
+            if self.args.work:
+                print(f"Relevant context: {relevant_context}")
 
         # Format the prompt with gathered context
         prompt = DIFF_PARSER_P1.format(selected_context_files=relevant_context, git_diff_output=git_diff_output)
@@ -236,6 +238,8 @@ class AIUpdater:
             parsed_response2: GeneratedFiles = response2.parsed
             if self.args.debug:
                 self.write_to_file(os.path.join(self.current_dir, "generatedfilestest.txt"), response2.text)
+                if self.args.work:
+                    print(f"Generated files: {parsed_response2.file_paths}")
             if(len(parsed_response2.file_paths) != len(parsed_response2.file_contents)):
                 print("ERROR: AI OUTPUT A DIFFERENT NUMBER OF FILENAMES THAN GENERATED FILE CONTENTS")
                 return
@@ -251,6 +255,7 @@ class AIUpdater:
                     ai_generated_dir = os.path.join(os.path.dirname(self.sdk_root_dir), "ai_generated", dir_structure)
                     os.makedirs(ai_generated_dir, exist_ok=True)
                     ai_file_path = os.path.join(ai_generated_dir, ai_filename)
+                # TODO: make it so that if --work is used the files get written to the correct place
                 else:
                     ai_filename = f"{filename_without_ext}ai{file_ext}"
                     ai_file_path = os.path.join(original_file_dir, ai_filename)
@@ -261,33 +266,35 @@ class AIUpdater:
         # Get diff and output (and write to file for debugging)
         # Note: the way I am currently doing git diff excludes the _pb2.py files because from what I can tell they are not useful as LLM context
         git_diff_dir = os.path.join(self.sdk_root_dir, "src", "viam", "gen")
+        scenario_dir = os.path.dirname(self.sdk_root_dir)
+        # Check if specific proto diff file was specified for testing reasons
         if self.args.test:
-            scenario_dir = os.path.dirname(self.sdk_root_dir)
-            # Check if specific proto diff file was specified for testing reasons
             if os.path.exists(os.path.join(scenario_dir, "proto_diff.txt")):
                 with open(os.path.join(scenario_dir, "proto_diff.txt"), "r") as f:
                     git_diff_output = f.read()
-            else:
-                git_diff_output = subprocess.check_output(["git", "diff", "HEAD~1", "HEAD", "--", git_diff_dir, ":!*_pb2.py"],
-                                                        text=True,
-                                                        cwd=self.sdk_root_dir)
-        else:
-            git_diff_output = subprocess.check_output(["git", "diff", "workflow/update-proto~1", "workflow/update-proto", "--", git_diff_dir, ":!*_pb2.py"],
-                                                  text=True,
-                                                  cwd=self.sdk_root_dir)
+
+        git_diff_output = subprocess.check_output(["git", "diff", "HEAD~1", "HEAD", "--", git_diff_dir, ":!*_pb2.py"],
+                                                    text=True,
+                                                    cwd=self.sdk_root_dir)
+
         if self.args.debug:
+            if self.args.work:
+                print(f"Git diff output: {git_diff_output}")
             testdiff_path = os.path.join(self.current_dir, "gitdifftest.txt")
             self.write_to_file(testdiff_path, git_diff_output)
 
         # Get relevant context files from LLM
         relevant_context = self.get_relevant_context(git_diff_output)
         if self.args.debug:
+            if self.args.work:
+                print(f"Relevant context files: {relevant_context.text}")
             self.write_to_file(os.path.join(self.current_dir, "relevantcontextfilestest.txt"), str(relevant_context.text))
 
         # Get diff analysis from LLM
         diff_analysis = self.get_diff_analysis(git_diff_output, relevant_context.parsed.file_paths)
-
         if self.args.debug:
+            if self.args.work:
+                print(f"Diff analysis: {diff_analysis.text}")
             diffparsertest_path = os.path.join(self.current_dir, "diffanalysistest.txt")
             self.write_to_file(diffparsertest_path, diff_analysis.text)
 
@@ -300,7 +307,12 @@ def main():
     parser = argparse.ArgumentParser(description="Viam SDK AI Updater")
     parser.add_argument("--debug", action="store_true", help="Enable debug mode to print various helpful files")
     parser.add_argument("--noai", action="store_true", help="Disable AI (for testing)")
-    parser.add_argument("--test", type=str, help="Enable when running tests. Supply path to root directory of desired test repo")
+
+    # Create a mutually exclusive group for --test and --work
+    group = parser.add_mutually_exclusive_group(required=True)
+    group.add_argument("--test", type=str, help="Enable when running tests. Supply path to root directory of desired test repo")
+    group.add_argument("--work", type=str, help="Enable when running in workflow. Supply path to root direcory repo to be updated")
+
     args = parser.parse_args()
 
     # Create and run the updater

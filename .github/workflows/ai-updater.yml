@@ -62,7 +62,7 @@ jobs:
           GOOGLE_API_KEY: ${{ secrets.GOOGLE_API_KEY }}
         run: |
           cd viam-ai-updater/ai_updater
-          uv run python ai_updater.py --debug --test $GITHUB_WORKSPACE
+          uv run python ai_updater.py --debug --work $GITHUB_WORKSPACE
 
       - name: Add + Commit + Open PR
         id: cpr
