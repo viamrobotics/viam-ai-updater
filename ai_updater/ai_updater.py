@@ -39,9 +39,10 @@ class AIUpdater:
         self.current_dir = os.path.dirname(os.path.abspath(__file__))
         if args.test:
             self.sdk_root_dir = args.test
+        elif args.work:
+            self.sdk_root_dir = args.work
         else:
             self.sdk_root_dir = os.path.dirname(self.current_dir)
-
 
         # Initialize the Gemini client
         api_key = api_key or os.getenv("GOOGLE_API_KEY")
@@ -50,7 +51,7 @@ class AIUpdater:
         self.client = genai.Client(api_key=api_key)
 
     def write_to_file(self, filepath: str, content: str) -> None:
-        """Write content to a file at the specified path.
+        """Write content to a file at the specified path. This will overwrite the existing file contents if it already exists.
 
         Args:
             filepath: Path to the file to write
@@ -249,15 +250,14 @@ class AIUpdater:
                 original_file_dir = os.path.dirname(os.path.join(self.sdk_root_dir, file_path))
                 original_filename = os.path.basename(file_path)
                 filename_without_ext, file_ext = os.path.splitext(original_filename)
+                ai_filename = f"{filename_without_ext}{file_ext}"
                 if self.args.test:
-                    ai_filename = f"{filename_without_ext}{file_ext}"
                     dir_structure = os.path.relpath(original_file_dir, self.sdk_root_dir)
                     ai_generated_dir = os.path.join(os.path.dirname(self.sdk_root_dir), "ai_generated", dir_structure)
                     os.makedirs(ai_generated_dir, exist_ok=True)
                     ai_file_path = os.path.join(ai_generated_dir, ai_filename)
                 # TODO: make it so that if --work is used the files get written to the correct place
-                else:
-                    ai_filename = f"{filename_without_ext}ai{file_ext}"
+                elif self.args.work:
                     ai_file_path = os.path.join(original_file_dir, ai_filename)
                 self.write_to_file(ai_file_path, parsed_response2.file_contents[index])
 
@@ -267,8 +267,9 @@ class AIUpdater:
         # Note: the way I am currently doing git diff excludes the _pb2.py files because from what I can tell they are not useful as LLM context
         git_diff_dir = os.path.join(self.sdk_root_dir, "src", "viam", "gen")
         scenario_dir = os.path.dirname(self.sdk_root_dir)
-        # Check if specific proto diff file was specified for testing reasons
+
         if self.args.test:
+            # Check if specific proto diff file was specified for testing reasons
             if os.path.exists(os.path.join(scenario_dir, "proto_diff.txt")):
                 with open(os.path.join(scenario_dir, "proto_diff.txt"), "r") as f:
                     git_diff_output = f.read()
@@ -276,10 +277,10 @@ class AIUpdater:
                 git_diff_output = subprocess.check_output(["git", "diff", "HEAD~1", "HEAD", "--", git_diff_dir, ":!*_pb2.py"],
                                                         text=True,
                                                         cwd=self.sdk_root_dir)
-        else:
+        elif self.args.work:
             git_diff_output = subprocess.check_output(["git", "diff", "HEAD~1", "HEAD", "--", git_diff_dir, ":!*_pb2.py"],
-                                                        text=True,
-                                                        cwd=self.sdk_root_dir)
+                                                  text=True,
+                                                  cwd=self.sdk_root_dir)
 
         if self.args.debug:
             if self.args.work:
