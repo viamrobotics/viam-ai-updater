@@ -85,6 +85,7 @@ jobs:
         uses: peter-evans/create-pull-request@v7
         with:
           commit-message: '[WORKFLOW] AI update based on proto changes'
+          path: sdk
           branch: ${{ inputs.target_branch }}
           delete-branch: true
           base: main
