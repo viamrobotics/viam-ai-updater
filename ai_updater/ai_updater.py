@@ -144,10 +144,11 @@ class AIUpdater:
         # Gather code context from the project
         relevant_context = self.gather_context_files(relevant_files=relevant_files)
         if self.args.debug:
-            debug_file_path = os.path.join(self.current_dir, "relevant_context.txt")
-            self.write_to_file(debug_file_path, relevant_context)
             if self.args.work:
                 print(f"Relevant context: {relevant_context}")
+            elif self.args.test:
+                debug_file_path = os.path.join(self.current_dir, "relevantcontextfilestest.txt")
+                self.write_to_file(debug_file_path, relevant_context)
 
         # Format the prompt with gathered context
         prompt = DIFF_PARSER_P1.format(selected_context_files=relevant_context, git_diff_output=git_diff_output)
@@ -239,11 +240,12 @@ class AIUpdater:
             # Write the generated content to files
             parsed_response2: GeneratedFiles = response2.parsed
             if self.args.debug:
-                self.write_to_file(os.path.join(self.current_dir, "generatedfilestest.txt"), response2.text)
                 if self.args.work:
                     print(f"Generated files: {parsed_response2.file_paths}")
                     for content in parsed_response2.file_contents:
                         print(f"First 5 lines of generated file:\n{'\\n'.join(content.splitlines()[:5])}\n---")
+                elif self.args.test:
+                    self.write_to_file(os.path.join(self.current_dir, "generatedfilestest.txt"), response2.text)
             if(len(parsed_response2.file_paths) != len(parsed_response2.file_contents)):
                 print("ERROR: AI OUTPUT A DIFFERENT NUMBER OF FILENAMES THAN GENERATED FILE CONTENTS")
                 return
@@ -259,7 +261,6 @@ class AIUpdater:
                     ai_generated_dir = os.path.join(os.path.dirname(self.sdk_root_dir), "ai_generated", dir_structure)
                     os.makedirs(ai_generated_dir, exist_ok=True)
                     ai_file_path = os.path.join(ai_generated_dir, ai_filename)
-                # TODO: make it so that if --work is used the files get written to the correct place
                 elif self.args.work:
                     ai_file_path = os.path.join(original_file_dir, ai_filename)
                 self.write_to_file(ai_file_path, parsed_response2.file_contents[index])
@@ -288,23 +289,26 @@ class AIUpdater:
         if self.args.debug:
             if self.args.work:
                 print(f"Git diff output: {git_diff_output}")
-            testdiff_path = os.path.join(self.current_dir, "gitdifftest.txt")
-            self.write_to_file(testdiff_path, git_diff_output)
+            elif self.args.test:
+                testdiff_path = os.path.join(self.current_dir, "gitdifftest.txt")
+                self.write_to_file(testdiff_path, git_diff_output)
 
         # Get relevant context files from LLM
         relevant_context = self.get_relevant_context(git_diff_output)
         if self.args.debug:
             if self.args.work:
                 print(f"Relevant context files: {relevant_context.text}")
-            self.write_to_file(os.path.join(self.current_dir, "relevantcontextfilestest.txt"), str(relevant_context.text))
+            elif self.args.test:
+                self.write_to_file(os.path.join(self.current_dir, "relevantcontextfilestest.txt"), str(relevant_context.text))
 
         # Get diff analysis from LLM
         diff_analysis = self.get_diff_analysis(git_diff_output, relevant_context.parsed.file_paths)
         if self.args.debug:
             if self.args.work:
                 print(f"Diff analysis: {diff_analysis.text}")
-            diffparsertest_path = os.path.join(self.current_dir, "diffanalysistest.txt")
-            self.write_to_file(diffparsertest_path, diff_analysis.text)
+            elif self.args.test:
+                diffparsertest_path = os.path.join(self.current_dir, "diffanalysistest.txt")
+                self.write_to_file(diffparsertest_path, diff_analysis.text)
 
         # Generate implementations based on analysis
         self.generate_implementations(diff_analysis)
