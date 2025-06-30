@@ -231,7 +231,8 @@ class AIUpdater:
                     of these files, integrating only the necessary new methods or edits as instructed. It is CRITICAL that you preserve
                     the exact original functionality, as well as ALL formatting, including newlines, indentation, and whitespace,
                     to ensure the code is perfectly readable and functional. Your output for each file must be the complete, valid,
-                    and perfectly formatted Python code (as well as the filepath of the file)'''
+                    and perfectly formatted Python code (as well as the filepath of the file). Ensure the number of filepaths and
+                    full file contents you return are the same (for example if you return 2 filepaths, you must return 2 full file contents).'''
                 )
                 )
 
@@ -241,6 +242,8 @@ class AIUpdater:
                 self.write_to_file(os.path.join(self.current_dir, "generatedfilestest.txt"), response2.text)
                 if self.args.work:
                     print(f"Generated files: {parsed_response2.file_paths}")
+                    for content in parsed_response2.file_contents:
+                        print(f"First 5 lines of generated file:\n{'\\n'.join(content.splitlines()[:5])}\n---")
             if(len(parsed_response2.file_paths) != len(parsed_response2.file_contents)):
                 print("ERROR: AI OUTPUT A DIFFERENT NUMBER OF FILENAMES THAN GENERATED FILE CONTENTS")
                 return

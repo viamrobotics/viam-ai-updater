@@ -28,7 +28,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           ref: ${{ inputs.target_branch }}
-          fetch-depth: 2
+          fetch-depth: 0 # Fetch all history for debugging git diff
           token: ${{ secrets.GITHUB_TOKEN }}
           path: sdk
 
@@ -57,6 +57,21 @@ jobs:
         run: |
           source .venv/bin/activate
           uv pip install google-genai pydantic
+
+      - name: Debug Git in SDK Repo
+        run: |
+          echo "--- Git Log in SDK Repo ---"
+          cd sdk
+          git log --oneline --graph -n 5
+          echo "--- Git Status in SDK Repo ---"
+          git status
+          echo "--- Current Working Directory (for context) ---"
+          pwd
+          echo "--- SDK Root Directory passed to ai_updater ---"
+          echo "$GITHUB_WORKSPACE/sdk"
+          echo "--- Direct git diff command execution (first 5 lines) ---"
+          git diff HEAD~1 HEAD -- src/viam/gen ':!*_pb2.py' | head -n 5
+        shell: bash
 
       - name: Run ai-updater
         env:
