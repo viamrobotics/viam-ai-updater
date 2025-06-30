@@ -270,10 +270,10 @@ class AIUpdater:
         # Get diff and output (and write to file for debugging)
         # Note: the way I am currently doing git diff excludes the _pb2.py files because from what I can tell they are not useful as LLM context
         git_diff_dir = os.path.join(self.sdk_root_dir, "src", "viam", "gen")
-        scenario_dir = os.path.dirname(self.sdk_root_dir)
 
         if self.args.test:
             # Check if specific proto diff file was specified for testing reasons
+            scenario_dir = os.path.dirname(self.sdk_root_dir)
             if os.path.exists(os.path.join(scenario_dir, "proto_diff.txt")):
                 with open(os.path.join(scenario_dir, "proto_diff.txt"), "r") as f:
                     git_diff_output = f.read()
@@ -319,8 +319,6 @@ def main():
     parser = argparse.ArgumentParser(description="Viam SDK AI Updater")
     parser.add_argument("--debug", action="store_true", help="Enable debug mode to print various helpful files")
     parser.add_argument("--noai", action="store_true", help="Disable AI (for testing)")
-
-    # Create a mutually exclusive group for --test and --work
     group = parser.add_mutually_exclusive_group(required=True)
     group.add_argument("--test", type=str, help="Enable when running tests. Supply path to root directory of desired test repo")
     group.add_argument("--work", type=str, help="Enable when running in workflow. Supply path to root direcory repo to be updated")

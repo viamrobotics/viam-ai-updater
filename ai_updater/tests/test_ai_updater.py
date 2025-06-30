@@ -50,7 +50,7 @@ SCENARIOS = [
 @pytest.mark.parametrize("scenario", SCENARIOS, ids=[s["name"] for s in SCENARIOS])
 def test_ai_updater(scenario):
     """Test the AI updater against a specific scenario."""
-    _run_test_scenario(scenario)
+    _run_test_scenario(scenario, skip_comparison=False)
 
 def _run_test_scenario(scenario, skip_comparison=True):
     tests_dir = os.path.dirname(os.path.abspath(__file__))
@@ -89,6 +89,6 @@ def _run_test_scenario(scenario, skip_comparison=True):
 
 if __name__ == "__main__":
     print("Running all scenarios for debugging...")
-    for scenario in SCENARIOS:
+    for scenario in SCENARIOS: #change this to run specific scenarios if desired
         print(f"Running scenario: {scenario['name']}")
         _run_test_scenario(scenario) # skip_comparison defaults to True for standalone run
