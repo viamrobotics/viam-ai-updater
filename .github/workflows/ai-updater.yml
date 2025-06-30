@@ -86,7 +86,7 @@ jobs:
         with:
           commit-message: '[WORKFLOW] AI update based on proto changes'
           path: sdk
-          branch: ${{ inputs.target_branch }}
+          branch: workflow/ai-update-${{ github.run_number }}
           delete-branch: true
           base: main
           title: AI update based on proto changes
@@ -94,3 +94,4 @@ jobs:
           #assignees: gabegottlob
           #reviewers: gabegottlob
           token: ${{ secrets.GITHUB_TOKEN }}
+          draft: true
