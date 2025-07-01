@@ -153,7 +153,7 @@ class AIUpdater:
 
         # Generate content if AI is enabled, otherwise return empty response
         response =self.client.models.generate_content(
-            model="gemini-2.5-flash",
+            model="gemini-2.5-pro",
             contents=prompt,
             config=types.GenerateContentConfig(
                 temperature=0.0,
