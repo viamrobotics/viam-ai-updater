@@ -94,8 +94,6 @@ class AIUpdater:
             tests_tree_structure=tests_tree_output,
             git_diff_output=git_diff_output
         )
-        tokens = self.client.models.count_tokens(model="gemini-2.5-pro", contents=prompt)
-        print(f"Input tokens from getrelevantdirs_prompt: {tokens}\n")
 
         response = self.client.models.generate_content(
             model="gemini-2.5-flash",
@@ -112,6 +110,7 @@ class AIUpdater:
                 should enable the next AI stage to understand existing patterns and accurately deduce required code changes based on the proto diff."""
             )
         )
+        print(f"Token data from from getrelevantdirs_prompt: {response.usage_metadata}\n")
         return response
 
     def gather_context_files(self, relevant_files: list[str]) -> str:
@@ -151,12 +150,8 @@ class AIUpdater:
         # Format the prompt with gathered context
         prompt = DIFF_PARSER_P1.format(selected_context_files=relevant_context, git_diff_output=git_diff_output)
 
-        # Count tokens for logging
-        tokens = self.client.models.count_tokens(model="gemini-2.5-pro", contents=prompt)
-        print(f"Input tokens from diffparser_prompt: {tokens}\n")
-
         # Generate content if AI is enabled, otherwise return empty response
-        return self.client.models.generate_content(
+        response =self.client.models.generate_content(
             model="gemini-2.5-flash",
             contents=prompt,
             config=types.GenerateContentConfig(
@@ -178,6 +173,10 @@ class AIUpdater:
                 and not rely on any prior context of the codebase."""
             )
         )
+
+        # Count tokens for logging
+        print(f"Token data from from diffparser_prompt: {response.usage_metadata}\n")
+        return response
 
     def generate_implementations(self, diff_analysis: types.GenerateContentResponse):
         """Generate implementation code based on diff analysis.
@@ -209,10 +208,6 @@ class AIUpdater:
         # Add the second part of the prompt
         prompt += FUNCTION_GENERATOR_P2
 
-        # Count tokens for logging
-        tokens = self.client.models.count_tokens(model="gemini-2.5-flash-lite-preview-06-17", contents=prompt)
-        print(f"Input tokens from funcgenerator_prompt: {tokens} \n")
-
         # Generate and write files if AI is enabled
         if not self.args.noai:
             response2 = self.client.models.generate_content(
@@ -234,6 +229,7 @@ class AIUpdater:
                     full file contents you return are the same (for example if you return 2 filepaths, you must return 2 full file contents).'''
                 )
                 )
+            print(f"Token data from from funcgenerator_prompt: {response2.usage_metadata}\n")
 
             # Write the generated content to files
             parsed_response2: GeneratedFiles = response2.parsed
