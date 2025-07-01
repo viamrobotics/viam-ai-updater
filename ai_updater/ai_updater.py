@@ -96,7 +96,7 @@ class AIUpdater:
         )
 
         response = self.client.models.generate_content(
-            model="gemini-2.5-flash",
+            model="gemini-2.5-flash-lite-preview-06-17",
             contents=prompt,
             config=types.GenerateContentConfig(
                 temperature=0.0,
@@ -153,7 +153,7 @@ class AIUpdater:
 
         # Generate content if AI is enabled, otherwise return empty response
         response =self.client.models.generate_content(
-            model="gemini-2.5-flash",
+            model="gemini-2.5-flash-lite-preview-06-17",
             contents=prompt,
             config=types.GenerateContentConfig(
                 temperature=0.0,
@@ -237,13 +237,14 @@ class AIUpdater:
             # Write the generated content to files
             parsed_response2: GeneratedFiles = response2.parsed
             if self.args.debug:
-                if self.args.work:
-                    for content in parsed_response2.file_contents:
-                        print(f"First 5 lines of generated file:\n{'\\n'.join(content.splitlines()[:5])}\n---")
-                elif self.args.test:
+                if self.args.test:
                     self.write_to_file(os.path.join(self.current_dir, "generatedfilestest.txt"), response2.text)
             if(len(parsed_response2.file_paths) != len(parsed_response2.file_contents)):
                 print("ERROR: AI OUTPUT A DIFFERENT NUMBER OF FILENAMES THAN GENERATED FILE CONTENTS")
+                return
+
+            if(len(parsed_response2.file_paths) == 0):
+                print("THE AI DID NOT DETERMINE THAT ANY FILES NEED TO BE UPDATED")
                 return
 
             for index, file_path in enumerate(parsed_response2.file_paths):
