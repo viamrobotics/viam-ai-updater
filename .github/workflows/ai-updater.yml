@@ -64,7 +64,6 @@ jobs:
           commit-message: '[WORKFLOW] AI update based on proto changes'
           path: sdk
           branch: test/ai-updater
-          delete-branch: true
           base: main
           title: AI update based on proto changes
           body: This is an AI-generated PR to update the SDK based on proto changes.
