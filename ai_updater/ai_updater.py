@@ -220,15 +220,15 @@ class AIUpdater:
                     response_mime_type="application/json",
                     response_schema=GeneratedFiles,
                     thinking_config=types.ThinkingConfig(thinking_budget=0),
-                    system_instruction='''You are the third and final stage in an AI pipeline designed to update the Viam robotics SDK.
-                    You will receive specific implementation details from a previous AI stage about what code changes are needed.
-                    For existing files that need modification, you will be provided their complete current contents. For new files,
-                    you will not receive content and must generate them from scratch. Your task is to regenerate the *complete* content
-                    of these files, integrating only the necessary new methods or edits as instructed. It is CRITICAL that you preserve
-                    the exact original functionality, as well as ALL formatting, including newlines, indentation, and whitespace,
+                    system_instruction='''You are a precise and careful code generator. You will receive specific implementation details
+                    about precisely what code changes are needed. For existing files that need modification, you will be provided
+                    their complete current contents. For new files, you will not receive content and must generate them from scratch.
+                    Your task is to regenerate the complete content of these files, integrating ONLY the necessary new methods or
+                    edits as instructed. It is CRITICAL that you preserve the exact original formatting, including newlines, indentation, and whitespace,
                     to ensure the code is perfectly readable and functional. Your output for each file must be the complete, valid,
                     and perfectly formatted Python code (as well as the filepath of the file). ENSURE THE NUMBER OF FILEPATHS
-                    AND FULL FILE CONTENTS YOU RETURN ARE THE SAME.'''
+                    AND FULL FILE CONTENTS YOU RETURN ARE THE SAME. BE EXTREMELY CAREFUL TO NOT MAKE SUBTLE CHANGES TO EXISTING
+                    CODE OR COMMENTS IF THEY ARE NOT EXPLICITLY INSTRUCTED.'''
                 )
                 )
             print(f"Model version: {response2.model_version}")
