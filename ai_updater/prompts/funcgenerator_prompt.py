@@ -1,13 +1,12 @@
 """Prompt for generating function implementations."""
 
 FUNCTION_GENERATOR_P1 = '''
-You are an expert Python developer implementing components for the Viam robotics SDK. Your task is to apply specific code changes to existing files based on detailed instructions. You must maintain the exact original functionality and strict formatting of all existing code while integrating new or modified functionality.
-
 You need to implement the following new functionality and changes:
-
 {implementation_details}
 
-I will now provide you with the *complete current contents* of the **existing files** that you need to modify. For **new files**, no content will be provided, and you will generate them from scratch. Your output for each file (whether existing or new) should be the *full, regenerated content* after applying only the necessary edits, strictly adhering to the implementation details provided.
+I will now provide you with the complete current contents of the existing files that you need to modify. For new files, no content will be provided,
+and you will generate them from scratch. Your output for each file (whether existing or new) should be the full, regenerated content after applying
+ONLY the necessary edits, strictly adhering to the implementation details provided.
 '''
 
 FUNCTION_GENERATOR_P2 = '''
