@@ -110,7 +110,8 @@ class AIUpdater:
                 should enable the next AI stage to understand existing patterns and accurately deduce required code changes based on the proto diff."""
             )
         )
-        print(f"Token data from from getrelevantdirs_prompt: {response.usage_metadata}\n")
+        print(f"Model version: {response.model_version}")
+        print(f"Token data from from getrelevantdirs_prompt: {response.usage_metadata.total_token_count}\n")
         return response
 
     def gather_context_files(self, relevant_files: list[str]) -> str:
@@ -175,7 +176,8 @@ class AIUpdater:
         )
 
         # Count tokens for logging
-        print(f"Token data from from diffparser_prompt: {response.usage_metadata}\n")
+        print(f"Model version: {response.model_version}")
+        print(f"Token data from from diffparser_prompt: {response.usage_metadata.total_token_count}\n")
         return response
 
     def generate_implementations(self, diff_analysis: types.GenerateContentResponse):
@@ -229,13 +231,13 @@ class AIUpdater:
                     AND FULL FILE CONTENTS YOU RETURN ARE THE SAME.'''
                 )
                 )
-            print(f"Token data from from funcgenerator_prompt: {response2.usage_metadata}\n")
+            print(f"Model version: {response2.model_version}")
+            print(f"Token data from from funcgenerator_prompt: {response2.usage_metadata.total_token_count}\n")
 
             # Write the generated content to files
             parsed_response2: GeneratedFiles = response2.parsed
             if self.args.debug:
                 if self.args.work:
-                    print(f"Generated files: {parsed_response2.file_paths}")
                     for content in parsed_response2.file_contents:
                         print(f"First 5 lines of generated file:\n{'\\n'.join(content.splitlines()[:5])}\n---")
                 elif self.args.test:
