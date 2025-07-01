@@ -225,8 +225,8 @@ class AIUpdater:
                     of these files, integrating only the necessary new methods or edits as instructed. It is CRITICAL that you preserve
                     the exact original functionality, as well as ALL formatting, including newlines, indentation, and whitespace,
                     to ensure the code is perfectly readable and functional. Your output for each file must be the complete, valid,
-                    and perfectly formatted Python code (as well as the filepath of the file). Ensure the number of filepaths and
-                    full file contents you return are the same (for example if you return 2 filepaths, you must return 2 full file contents).'''
+                    and perfectly formatted Python code (as well as the filepath of the file). ENSURE THE NUMBER OF FILEPATHS
+                    AND FULL FILE CONTENTS YOU RETURN ARE THE SAME.'''
                 )
                 )
             print(f"Token data from from funcgenerator_prompt: {response2.usage_metadata}\n")
