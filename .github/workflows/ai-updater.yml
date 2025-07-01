@@ -5,13 +5,11 @@ on:
   workflow_call:
     inputs:
       target_branch:
-        description: "The branch to update"
+        description: "The branch to update and make PR from"
         required: true
         type: string
     secrets:
       GOOGLE_API_KEY:
-        required: true
-      GITHUB_TOKEN: #this should only be necessary for local testing
         required: true
 
 jobs:
@@ -52,27 +50,12 @@ jobs:
           source .venv/bin/activate
           uv pip install google-genai pydantic
 
-      - name: Debug Git in SDK Repo #just for testing
-        run: |
-          echo "--- Git Log in SDK Repo ---"
-          cd sdk
-          git log --oneline --graph -n 5
-          echo "--- Git Status in SDK Repo ---"
-          git status
-          echo "--- Current Working Directory (for context) ---"
-          pwd
-          echo "--- SDK Root Directory passed to ai_updater ---"
-          echo "$GITHUB_WORKSPACE/sdk"
-          echo "--- Direct git diff command execution (first 5 lines) ---"
-          git diff HEAD~1 HEAD -- src/viam/gen ':!*_pb2.py' | head -n 5
-        shell: bash
-
       - name: Run ai-updater
         env:
           GOOGLE_API_KEY: ${{ secrets.GOOGLE_API_KEY }}
         run: |
           cd viam-ai-updater/ai_updater
-          uv run python ai_updater.py --debug --work $GITHUB_WORKSPACE/sdk
+          uv run python ai_updater.py --work $GITHUB_WORKSPACE/sdk
 
       - name: Add + Commit + Open PR
         id: cpr
@@ -80,12 +63,12 @@ jobs:
         with:
           commit-message: '[WORKFLOW] AI update based on proto changes'
           path: sdk
-          branch: workflow/ai-update-${{ github.run_number }}
+          branch: test/ai-updater
           delete-branch: true
           base: main
           title: AI update based on proto changes
           body: This is an AI-generated PR to update the SDK based on proto changes.
-          #assignees: gabegottlob
-          #reviewers: gabegottlob
+          assignees: gabegottlob
+          reviewers: gabegottlob
           token: ${{ secrets.GITHUB_TOKEN }}
           draft: true
