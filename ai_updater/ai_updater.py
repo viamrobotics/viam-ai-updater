@@ -144,10 +144,8 @@ class AIUpdater:
         # Gather code context from the project
         relevant_context = self.gather_context_files(relevant_files=relevant_files)
         if self.args.debug:
-            if self.args.work:
-                print(f"Relevant context: {relevant_context}")
-            elif self.args.test:
-                debug_file_path = os.path.join(self.current_dir, "relevantcontextfilestest.txt")
+            if self.args.test:
+                debug_file_path = os.path.join(self.current_dir, "relevantcontexttest.txt")
                 self.write_to_file(debug_file_path, relevant_context)
 
         # Format the prompt with gathered context

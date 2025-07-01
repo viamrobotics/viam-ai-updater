@@ -7,6 +7,8 @@ Proto update hashes to use as test cases:
     3. Added entire new components (Button and Switch): e8818bce81be520a740bf3da725c8d816fe2aa4b
         Merged Implementation (Button): dee3547b0c98c2c2fd7fbdd2b239899e5d031795
         Merged Implementation (Switch): 096a5083f0d2c8b1152e8aa3b6ed233b1af60623
+    4. Updated a version number: cd8765e9b2d6adcdeb7ecda6c2b72940d4439d0a
+        No merged implementation because no changes need to be made.
 '''
 
 '''
@@ -42,6 +44,13 @@ SCENARIOS = [
         "name": "scenario-3",
         "description": "Added entire new components (Button and Switch)",
         "pre_implementation_commit": "e8818bce81be520a740bf3da725c8d816fe2aa4b",
+        "specific_proto_diff_file": False,
+        "repo_url": "git@github.com:viamrobotics/viam-python-sdk.git"
+    },
+    {
+        "name": "scenario-4",
+        "description": "Updated a version number",
+        "pre_implementation_commit": "cd8765e9b2d6adcdeb7ecda6c2b72940d4439d0a",
         "specific_proto_diff_file": False,
         "repo_url": "git@github.com:viamrobotics/viam-python-sdk.git"
     }
@@ -88,7 +97,11 @@ def _run_test_scenario(scenario, skip_comparison=True):
                     assert os.path.exists(ai_file), f"AI did not generate expected file: {rel_path}"
 
 if __name__ == "__main__":
-    print("Running all scenarios for debugging...")
-    for scenario in SCENARIOS: #change this to run specific scenarios if desired
-        print(f"Running scenario: {scenario['name']}")
-        _run_test_scenario(scenario) # skip_comparison defaults to True for standalone run
+    # print("Running all scenarios for debugging...")
+    # for scenario in SCENARIOS: #change this to run specific scenarios if desired
+    #     print(f"Running scenario: {scenario['name']}")
+    #     _run_test_scenario(scenario) # skip_comparison defaults to True for standalone run
+
+    scenario = SCENARIOS[3]
+    print(f"Running scenario: {scenario['name']}")
+    _run_test_scenario(scenario)

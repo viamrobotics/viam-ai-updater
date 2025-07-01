@@ -14,7 +14,7 @@ on:
 
 jobs:
   run-ai-updater:
-    runs-on: ubuntu-latest
+    runs-on: macos-latest
     steps:
       - name: Checkout SDK
         uses: actions/checkout@v4
@@ -32,7 +32,7 @@ jobs:
           token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Install tree command
-        run: sudo apt-get update && sudo apt-get install -y tree
+        run: brew install tree
 
       - name: Install uv
         uses: astral-sh/setup-uv@v3
