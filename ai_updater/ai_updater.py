@@ -8,6 +8,9 @@ import subprocess
 from prompts.diffparser_prompt import DIFF_PARSER_P1
 from prompts.funcgenerator_prompt import FUNCTION_GENERATOR_P1, FUNCTION_GENERATOR_P2
 from prompts.getrelevantcontext_prompt import GET_RELEVANT_CONTEXT_P1
+from prompts.getrelevantcontext_system import GET_RELEVANT_CONTEXT_SYSTEM
+from prompts.diffparser_system import DIFF_PARSER_SYSTEM
+from prompts.funcgenerator_system import FUNCTION_GENERATOR_SYSTEM
 
 class ContextFiles(BaseModel):
     """Model for storing the files that should be included as context."""
@@ -96,19 +99,14 @@ class AIUpdater:
         )
 
         response = self.client.models.generate_content(
-            model="gemini-2.5-flash-lite-preview-06-17",
+            model="gemini-2.5-flash",
             contents=prompt,
             config=types.GenerateContentConfig(
                 temperature=0.0,
                 response_mime_type="application/json",
                 response_schema=ContextFiles,
                 thinking_config=types.ThinkingConfig(thinking_budget=-1),
-                system_instruction="""You are the first stage in an AI pipeline for updating SDK code.
-                Your role is to act as an intelligent context selector. Given a git diff and SDK directory structures,
-                identify and output only the most relevant implementation and test files that are directly impacted or
-                those that could provide analogous examples. The goal is to provide sufficient context to the LLM without overwhelming it.
-                The selected files should enable the next AI stage to understand existing patterns and accurately
-                deduce required code changes based on the proto diff."""
+                system_instruction=GET_RELEVANT_CONTEXT_SYSTEM
             )
         )
         print(f"Model version: {response.model_version}")
@@ -154,25 +152,14 @@ class AIUpdater:
 
         # Generate content if AI is enabled, otherwise return empty response
         response =self.client.models.generate_content(
-            model="gemini-2.5-pro",
+            model="gemini-2.5-flash",
             contents=prompt,
             config=types.GenerateContentConfig(
                 temperature=0.0,
                 response_mime_type="application/json",
                 response_schema=RequiredChanges,
                 thinking_config=types.ThinkingConfig(thinking_budget=-1),
-                system_instruction="""You are the second stage in an AI pipeline for updating SDK code, functioning as an
-                expert code change analyst for Python SDKs impacted by protobuf definition changes.
-                Your primary task is to precisely analyze a provided git diff alongside relevant code context,
-                then identify all necessary code modifications within the SDK's source and test files. This includes identifying
-                existing files that need modifications, and, *only when absolutely necessary*, identifying entirely new files that need to be created.
-                For each identified file (existing or new), you must generate extremely detailed and unambiguous implementation instructions.
-                These instructions must be comprehensive enough for the subsequent AI stage to regenerate the complete file content
-                (for existing files) or generate the entire content (for new files).
-                Crucially, your output must focus solely on changes directly necessitated by the proto diff; do not invent or suggest
-                extraneous modifications. You must assume the next stage has no prior context of the codebase and will
-                strictly follow your instructions. Therefore, your instructions must be extremely detailed and comprehensive
-                and not rely on any prior context of the codebase."""
+                system_instruction=DIFF_PARSER_SYSTEM
             )
         )
 
@@ -213,22 +200,14 @@ class AIUpdater:
         # Generate and write files if AI is enabled
         if not self.args.noai:
             response2 = self.client.models.generate_content(
-                model="gemini-2.5-flash-lite-preview-06-17",
+                model="gemini-2.5-flash",
                 contents=prompt,
                 config=types.GenerateContentConfig(
                     temperature=0.0,
                     response_mime_type="application/json",
                     response_schema=GeneratedFiles,
                     thinking_config=types.ThinkingConfig(thinking_budget=0),
-                    system_instruction='''You are a precise and careful code generator. You will receive specific implementation details
-                    about precisely what code changes are needed. For existing files that need modification, you will be provided
-                    their complete current contents. For new files, you will not receive content and must generate them from scratch.
-                    Your task is to regenerate the complete content of these files, integrating ONLY the necessary new methods or
-                    edits as instructed. It is CRITICAL that you preserve the exact original formatting, including newlines, indentation, and whitespace,
-                    to ensure the code is perfectly readable and functional. Your output for each file must be the complete, valid,
-                    and perfectly formatted Python code (as well as the filepath of the file). ENSURE THE NUMBER OF FILEPATHS
-                    AND FULL FILE CONTENTS YOU RETURN ARE THE SAME. BE EXTREMELY CAREFUL TO NOT MAKE SUBTLE CHANGES TO EXISTING
-                    CODE OR COMMENTS IF THEY ARE NOT EXPLICITLY INSTRUCTED.'''
+                    system_instruction=FUNCTION_GENERATOR_SYSTEM
                 )
                 )
             print(f"Model version: {response2.model_version}")
