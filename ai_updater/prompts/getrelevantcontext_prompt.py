@@ -2,7 +2,7 @@ GET_RELEVANT_CONTEXT_P1 = '''
 You are the first Gemini LLM in a three-stage AI pipeline for automatically updating SDK code based on proto definition changes:
 
 STAGE 1 (YOUR ROLE): Context Selection - Identify relevant files to be used as context and examples for analysis
-STAGE 2: Diff Analysis - Determine what code changes are needed based on proto changes
+STAGE 2: Diff Analysis - Determine what code changes are needed based on proto changes and the selected context from the SDK
 STAGE 3: Implementation Generation - Write the actual code changes to update the SDK
 
 Your specific job is to:
@@ -16,12 +16,10 @@ When selecting files, prioritize:
 - Files that directly implement the components/services or other functionality being changed in the proto files.
 - Test files that verify the functionality being changed.
 - Base classes or interfaces that the changed functionality inherits from or implements.
-- Additionally, include files that contain similar patterns or examples if they would be valuable in demonstrating how to implement the required changes. This includes analogous components or services if the primary change is to a component or service, but always ensure these examples are truly helpful and not simply adding unnecessary bulk.
+- Additionally, include files that contain similar patterns or examples if they would be valuable in demonstrating how to implement the required changes. This could include analogous components or services if the primary change is to a component or service.
 
 Your output should be a list of file paths, with a brief explanation of why each file is relevant.
-
 The next LLM in the chain will use your output to gather code from these files and analyze what specific code changes need to be implemented.
-Your analysis should be thorough but focused on identifying the most relevant and *actionable* files to keep the context manageable and efficient.
 
 Here is a rough outline of the SDK architecture to help you understand its structure and functionality:
 === SDK ARCHITECTURE ===
@@ -112,9 +110,9 @@ Finally, here are the changes to the proto files (provided as a git diff):
 Task Review:
 Based on the git diff provided, please analyze which files contain code that is most relevant to the changes being made.
 
-Your selection of files for context should prioritize those that are directly impacted by the proto changes or are immediate, critical dependencies for understanding the required implementations.
+Your selection of files for context should prioritize those that are directly impacted by the proto changes or are critical dependencies for understanding the required implementations.
 
-When considering example files, only include them if they are relevant and could illustrate a pattern or convention crucial for the changes. Avoid including extraneous files that do not offer unique, actionable context.
+When considering example files, include them if they are relevant and could illustrate a pattern or convention crucial for the changes. Avoid including extraneous files that do not offer relevant context.
 
 Also include any files from the tests/ directory that are directly necessary or provide highly relevant examples for testing the new functionality.
 

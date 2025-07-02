@@ -106,8 +106,9 @@ class AIUpdater:
                 system_instruction="""You are the first stage in an AI pipeline for updating SDK code.
                 Your role is to act as an intelligent context selector. Given a git diff and SDK directory structures,
                 identify and output only the most relevant implementation and test files that are directly impacted or
-                those that could provide analogous examples. The goal is to provide sufficient, focused context. The selected files
-                should enable the next AI stage to understand existing patterns and accurately deduce required code changes based on the proto diff."""
+                those that could provide analogous examples. The goal is to provide sufficient context to the LLM without overwhelming it.
+                The selected files should enable the next AI stage to understand existing patterns and accurately
+                deduce required code changes based on the proto diff."""
             )
         )
         print(f"Model version: {response.model_version}")
@@ -201,7 +202,6 @@ class AIUpdater:
                     existing_files_text += f"\n=== {file_path} ===\n{file_content}\n"
             except FileNotFoundError:
                 print(f"Warning: File {file_path} not found. Skipping this file.")
-                existing_files_text += f"\n=== {file_path} ===\n# File not found. Please ensure this file exists before proceeding.\n"
             except Exception as e:
                 print(f"Error reading file {file_path}: {str(e)}")
                 existing_files_text += f"\n=== {file_path} ===\n# Error reading file: {str(e)}\n"
