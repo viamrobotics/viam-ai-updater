@@ -5,7 +5,7 @@ on:
   workflow_call:
     inputs:
       target_branch:
-        description: "The branch to update and make PR from"
+        description: "The branch to base the update on"
         required: true
         type: string
     secrets:
@@ -63,11 +63,12 @@ jobs:
         with:
           commit-message: '[WORKFLOW] AI update based on proto changes'
           path: sdk
-          branch: test/ai-updater
+          branch: workflow/ai-updater
           base: main
           title: AI update based on proto changes
-          body: This is an AI-generated PR to update the SDK based on proto changes.
+          body: This is an AI-generated PR to update the SDK based on proto changes. The AI may make mistakes so review carefully.
           assignees: gabegottlob
           reviewers: gabegottlob
+          team-reviewers: sdk-netcode
           token: ${{ secrets.GITHUB_TOKEN }}
           draft: true
