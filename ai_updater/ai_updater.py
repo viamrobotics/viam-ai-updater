@@ -5,12 +5,9 @@ from pydantic import BaseModel
 import argparse
 import subprocess
 
-from prompts.diffparser_prompt import DIFF_PARSER_P1
-from prompts.funcgenerator_prompt import FUNCTION_GENERATOR_P1, FUNCTION_GENERATOR_P2
-from prompts.getrelevantcontext_prompt import GET_RELEVANT_CONTEXT_P1
-from prompts.getrelevantcontext_system import GET_RELEVANT_CONTEXT_SYSTEM
-from prompts.diffparser_system import DIFF_PARSER_SYSTEM
-from prompts.funcgenerator_system import FUNCTION_GENERATOR_SYSTEM
+from prompts.getrelevantcontext_prompts import GETRELEVANTCONTEXT_P, GETRELEVANTCONTEXT_S
+from prompts.diffparser_prompts import DIFFPARSER_P, DIFFPARSER_S
+from prompts.generateimplementations_prompts import GENERATEIMPLEMENTATIONS_P, GENERATEIMPLEMENTATIONS_S
 
 class ContextFiles(BaseModel):
     """Model for storing the files that should be included as context."""
@@ -81,18 +78,18 @@ class AIUpdater:
         self.client = genai.Client(api_key=api_key)
 
     def get_relevant_context(self, git_diff_output: str) -> types.GenerateContentResponse:
-        """Get relevant context files for analysis.
+        """Utilizes AI to gather relevant context files for analysis.
 
         Args:
-            git_diff_output (str): Git diff output
+            git_diff_output (str): Git diff output containing proto/code changes
 
         Returns:
-            GenerateContentResponse: LLM response containing relevant files
+            GenerateContentResponse: Gemini LLM response containing relevant files
         """
         sdk_tree_output = subprocess.check_output(["tree", os.path.join("src", "viam")], text=True, cwd=self.sdk_root_dir)
         tests_tree_output = subprocess.check_output(["tree", "tests"], text=True, cwd=self.sdk_root_dir)
 
-        prompt = GET_RELEVANT_CONTEXT_P1.format(
+        prompt = GETRELEVANTCONTEXT_P.format(
             sdk_tree_structure=sdk_tree_output,
             tests_tree_structure=tests_tree_output,
             git_diff_output=git_diff_output
@@ -106,29 +103,12 @@ class AIUpdater:
                 response_mime_type="application/json",
                 response_schema=ContextFiles,
                 thinking_config=types.ThinkingConfig(thinking_budget=-1),
-                system_instruction=GET_RELEVANT_CONTEXT_SYSTEM
+                system_instruction=GETRELEVANTCONTEXT_S
             )
         )
         print(f"Model version: {response.model_version}")
-        print(f"Token data from from getrelevantdirs_prompt: {response.usage_metadata.total_token_count}\n")
+        print(f"Token data from from context gathering call: {response.usage_metadata.total_token_count}\n")
         return response
-
-    def gather_context_files(self, relevant_files: list[str]) -> str:
-        """Gather context from specific files in the project.
-
-        Args:
-            relevant_files (list[str]): List of file paths to gather context from
-
-        Returns:
-            str: Concatenated content of all relevant files
-        """
-        context_str = ""
-        for file in relevant_files:
-            file_path = os.path.join(self.sdk_root_dir, file)
-            file_content = read_file_content(file_path)
-            file_info = f"File: {file}\nContent: \n{file_content}\n--------------------------------\n"
-            context_str += file_info
-        return context_str
 
     def get_diff_analysis(self, git_diff_output: str, relevant_files: list[str]) -> types.GenerateContentResponse:
         """Analyze git diff using LLM to identify required code changes.
@@ -140,15 +120,18 @@ class AIUpdater:
         Returns:
             GenerateContentResponse: LLM response containing analysis of needed changes
         """
-        # Gather code context from the project
-        relevant_context = self.gather_context_files(relevant_files=relevant_files)
-        if self.args.debug:
-            if self.args.test:
-                debug_file_path = os.path.join(self.current_dir, "relevantcontexttest.txt")
-                write_to_file(debug_file_path, relevant_context)
+        # Gather relevant context files from the project and format them for the prompt
+        relevant_context = ""
+        for file in relevant_files:
+            file_path = os.path.join(self.sdk_root_dir, file)
+            file_content = read_file_content(file_path)
+            relevant_context += f"File: {file}\nContent: \n{file_content}\n--------------------------------\n"
+
+        if self.args.debug and self.args.test:
+            write_to_file(os.path.join(self.current_dir, "relevantcontexttest.txt"), relevant_context)
 
         # Format the prompt with gathered context
-        prompt = DIFF_PARSER_P1.format(selected_context_files=relevant_context, git_diff_output=git_diff_output)
+        prompt = DIFFPARSER_P.format(selected_context_files=relevant_context, git_diff_output=git_diff_output)
 
         # Generate content if AI is enabled, otherwise return empty response
         response =self.client.models.generate_content(
@@ -159,13 +142,13 @@ class AIUpdater:
                 response_mime_type="application/json",
                 response_schema=RequiredChanges,
                 thinking_config=types.ThinkingConfig(thinking_budget=-1),
-                system_instruction=DIFF_PARSER_SYSTEM
+                system_instruction=DIFFPARSER_S
             )
         )
 
         # Count tokens for logging
         print(f"Model version: {response.model_version}")
-        print(f"Token data from from diffparser_prompt: {response.usage_metadata.total_token_count}\n")
+        print(f"Token data from from diff analysis call: {response.usage_metadata.total_token_count}\n")
         return response
 
     def generate_implementations(self, diff_analysis: types.GenerateContentResponse):
@@ -174,11 +157,8 @@ class AIUpdater:
         Args:
             diff_analysis: LLM response from diff analysis
         """
-        # Parse the response from diff analysis
+        # Parse the response from diff analysis (according to defined Pydantic model)
         parsed_response: RequiredChanges = diff_analysis.parsed
-
-        # Start with the first part of the prompt
-        prompt = FUNCTION_GENERATOR_P1.format(implementation_details=parsed_response.implementation_details)
 
         # Add existing files content to the prompt
         existing_files_text = "\n=== EXISTING FILES ===\n"
@@ -191,15 +171,12 @@ class AIUpdater:
                 print(f"Warning: File {file_path} not found. Skipping this file.")
             except Exception as e:
                 print(f"Error reading file {file_path}: {str(e)}")
-                existing_files_text += f"\n=== {file_path} ===\n# Error reading file: {str(e)}\n"
-        prompt += existing_files_text
 
-        # Add the second part of the prompt
-        prompt += FUNCTION_GENERATOR_P2
+        prompt = GENERATEIMPLEMENTATIONS_P.format(implementation_details=parsed_response.implementation_details, existing_files_text=existing_files_text)
 
         # Generate and write files if AI is enabled
         if not self.args.noai:
-            response2 = self.client.models.generate_content(
+            response = self.client.models.generate_content(
                 model="gemini-2.5-flash",
                 contents=prompt,
                 config=types.GenerateContentConfig(
@@ -207,26 +184,25 @@ class AIUpdater:
                     response_mime_type="application/json",
                     response_schema=GeneratedFiles,
                     thinking_config=types.ThinkingConfig(thinking_budget=0),
-                    system_instruction=FUNCTION_GENERATOR_SYSTEM
+                    system_instruction=GENERATEIMPLEMENTATIONS_S
                 )
                 )
-            print(f"Model version: {response2.model_version}")
-            print(f"Token data from from funcgenerator_prompt: {response2.usage_metadata.total_token_count}\n")
+            print(f"Model version: {response.model_version}")
+            print(f"Token data from from implementation generation call: {response.usage_metadata.total_token_count}\n")
 
             # Write the generated content to files
-            parsed_response2: GeneratedFiles = response2.parsed
-            if self.args.debug:
-                if self.args.test:
-                    write_to_file(os.path.join(self.current_dir, "generatedfilestest.txt"), response2.text)
-            if(len(parsed_response2.file_paths) != len(parsed_response2.file_contents)):
-                print("ERROR: AI OUTPUT A DIFFERENT NUMBER OF FILENAMES THAN GENERATED FILE CONTENTS")
+            parsed_response: GeneratedFiles = response.parsed
+            if self.args.debug and self.args.test:
+                write_to_file(os.path.join(self.current_dir, "generatedfilestest.txt"), response.text)
+
+            if(len(parsed_response.file_paths) != len(parsed_response.file_contents)):
+                raise ValueError("ERROR: AI OUTPUT A DIFFERENT NUMBER OF FILENAMES THAN GENERATED FILE CONTENTS")
+
+            if(len(parsed_response.file_paths) == 0):
+                print("THE AI WORKFLOW DID NOT DETERMINE THAT ANY FILES NEED TO BE UPDATED")
                 return
 
-            if(len(parsed_response2.file_paths) == 0):
-                print("THE AI DID NOT DETERMINE THAT ANY FILES NEED TO BE UPDATED")
-                return
-
-            for index, file_path in enumerate(parsed_response2.file_paths):
+            for index, file_path in enumerate(parsed_response.file_paths):
                 # Output AI generated files
                 original_file_dir = os.path.dirname(os.path.join(self.sdk_root_dir, file_path))
                 original_filename = os.path.basename(file_path)
@@ -239,12 +215,12 @@ class AIUpdater:
                     ai_file_path = os.path.join(ai_generated_dir, ai_filename)
                 elif self.args.work:
                     ai_file_path = os.path.join(original_file_dir, ai_filename)
-                write_to_file(ai_file_path, parsed_response2.file_contents[index])
+                write_to_file(ai_file_path, parsed_response.file_contents[index])
 
     def run(self):
         """Main execution method for the AI updater."""
         # Get diff and output (and write to file for debugging)
-        # Note: the way I am currently doing git diff excludes the _pb2.py files because from what I can tell they are not useful as LLM context
+        # Note: the way I am currently doing git diff excludes the _pb2.py files because it clutters the diff and confuses the LLM
         git_diff_dir = os.path.join(self.sdk_root_dir, "src", "viam", "gen")
 
         if self.args.test:
@@ -266,10 +242,8 @@ class AIUpdater:
             if self.args.work:
                 print(f"Git diff output: {git_diff_output}")
             elif self.args.test:
-                testdiff_path = os.path.join(self.current_dir, "gitdifftest.txt")
-                write_to_file(testdiff_path, git_diff_output)
+                write_to_file(os.path.join(self.current_dir, "gitdifftest.txt"), git_diff_output)
 
-        # Get relevant context files from LLM
         relevant_context = self.get_relevant_context(git_diff_output)
         if self.args.debug:
             if self.args.work:
@@ -277,16 +251,13 @@ class AIUpdater:
             elif self.args.test:
                 write_to_file(os.path.join(self.current_dir, "relevantcontextfilestest.txt"), str(relevant_context.text))
 
-        # Get diff analysis from LLM
         diff_analysis = self.get_diff_analysis(git_diff_output, relevant_context.parsed.file_paths)
         if self.args.debug:
             if self.args.work:
                 print(f"Diff analysis: {diff_analysis.text}")
             elif self.args.test:
-                diffparsertest_path = os.path.join(self.current_dir, "diffanalysistest.txt")
-                write_to_file(diffparsertest_path, diff_analysis.text)
+                write_to_file(os.path.join(self.current_dir, "diffanalysistest.txt"), diff_analysis.text)
 
-        # Generate implementations based on analysis
         self.generate_implementations(diff_analysis)
 
 
