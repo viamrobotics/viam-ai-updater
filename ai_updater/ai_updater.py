@@ -238,6 +238,10 @@ class AIUpdater:
                                                   text=True,
                                                   cwd=self.sdk_root_dir)
 
+        if git_diff_output == "":
+            print("There were no changes detected that required an update to the SDK. Exiting.")
+            return
+
         if self.args.debug:
             if self.args.work:
                 print(f"Git diff output: {git_diff_output}")
