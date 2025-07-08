@@ -27,6 +27,33 @@ class GeneratedFiles(BaseModel):
     file_paths: list[str]
     file_contents: list[str]
 
+def write_to_file(filepath: str, content: str) -> None:
+    """Write content to a file at the specified path. This will overwrite the existing file contents if it already exists.
+
+    Args:
+        filepath: Path to the file to write
+        content: Content to write to the file
+    """
+    print(f"Writing to: {filepath}")
+    with open(filepath, 'w') as f:
+        f.write(content)
+    print(f"Successfully wrote to: {filepath} \n")
+
+def read_file_content(file_path) -> str:
+    """Read and return the content of a file.
+
+    Args:
+        file_path: Path to the file to read
+
+    Returns:
+        str: Content of the file or error message if reading fails
+    """
+    try:
+        with open(file_path, 'r', encoding='utf-8') as f:
+            return f.read()
+    except Exception as e:
+        return f"Error reading file: {str(e)}"
+
 class AIUpdater:
     """Class for updating SDK code based on proto changes using AI."""
 
@@ -52,33 +79,6 @@ class AIUpdater:
         if not api_key:
             raise ValueError("GOOGLE_API_KEY environment variable not set and no API key provided")
         self.client = genai.Client(api_key=api_key)
-
-    def write_to_file(self, filepath: str, content: str) -> None:
-        """Write content to a file at the specified path. This will overwrite the existing file contents if it already exists.
-
-        Args:
-            filepath: Path to the file to write
-            content: Content to write to the file
-        """
-        print(f"Writing to: {filepath}")
-        with open(filepath, 'w') as f:
-            f.write(content)
-        print(f"Successfully wrote to: {filepath} \n")
-
-    def read_file_content(self, file_path) -> str:
-        """Read and return the content of a file.
-
-        Args:
-            file_path: Path to the file to read
-
-        Returns:
-            str: Content of the file or error message if reading fails
-        """
-        try:
-            with open(file_path, 'r', encoding='utf-8') as f:
-                return f.read()
-        except Exception as e:
-            return f"Error reading file: {str(e)}"
 
     def get_relevant_context(self, git_diff_output: str) -> types.GenerateContentResponse:
         """Get relevant context files for analysis.
@@ -125,7 +125,7 @@ class AIUpdater:
         context_str = ""
         for file in relevant_files:
             file_path = os.path.join(self.sdk_root_dir, file)
-            file_content = self.read_file_content(file_path)
+            file_content = read_file_content(file_path)
             file_info = f"File: {file}\nContent: \n{file_content}\n--------------------------------\n"
             context_str += file_info
         return context_str
@@ -145,7 +145,7 @@ class AIUpdater:
         if self.args.debug:
             if self.args.test:
                 debug_file_path = os.path.join(self.current_dir, "relevantcontexttest.txt")
-                self.write_to_file(debug_file_path, relevant_context)
+                write_to_file(debug_file_path, relevant_context)
 
         # Format the prompt with gathered context
         prompt = DIFF_PARSER_P1.format(selected_context_files=relevant_context, git_diff_output=git_diff_output)
@@ -217,7 +217,7 @@ class AIUpdater:
             parsed_response2: GeneratedFiles = response2.parsed
             if self.args.debug:
                 if self.args.test:
-                    self.write_to_file(os.path.join(self.current_dir, "generatedfilestest.txt"), response2.text)
+                    write_to_file(os.path.join(self.current_dir, "generatedfilestest.txt"), response2.text)
             if(len(parsed_response2.file_paths) != len(parsed_response2.file_contents)):
                 print("ERROR: AI OUTPUT A DIFFERENT NUMBER OF FILENAMES THAN GENERATED FILE CONTENTS")
                 return
@@ -239,7 +239,7 @@ class AIUpdater:
                     ai_file_path = os.path.join(ai_generated_dir, ai_filename)
                 elif self.args.work:
                     ai_file_path = os.path.join(original_file_dir, ai_filename)
-                self.write_to_file(ai_file_path, parsed_response2.file_contents[index])
+                write_to_file(ai_file_path, parsed_response2.file_contents[index])
 
     def run(self):
         """Main execution method for the AI updater."""
@@ -267,7 +267,7 @@ class AIUpdater:
                 print(f"Git diff output: {git_diff_output}")
             elif self.args.test:
                 testdiff_path = os.path.join(self.current_dir, "gitdifftest.txt")
-                self.write_to_file(testdiff_path, git_diff_output)
+                write_to_file(testdiff_path, git_diff_output)
 
         # Get relevant context files from LLM
         relevant_context = self.get_relevant_context(git_diff_output)
@@ -275,7 +275,7 @@ class AIUpdater:
             if self.args.work:
                 print(f"Relevant context files: {relevant_context.text}")
             elif self.args.test:
-                self.write_to_file(os.path.join(self.current_dir, "relevantcontextfilestest.txt"), str(relevant_context.text))
+                write_to_file(os.path.join(self.current_dir, "relevantcontextfilestest.txt"), str(relevant_context.text))
 
         # Get diff analysis from LLM
         diff_analysis = self.get_diff_analysis(git_diff_output, relevant_context.parsed.file_paths)
@@ -284,7 +284,7 @@ class AIUpdater:
                 print(f"Diff analysis: {diff_analysis.text}")
             elif self.args.test:
                 diffparsertest_path = os.path.join(self.current_dir, "diffanalysistest.txt")
-                self.write_to_file(diffparsertest_path, diff_analysis.text)
+                write_to_file(diffparsertest_path, diff_analysis.text)
 
         # Generate implementations based on analysis
         self.generate_implementations(diff_analysis)
