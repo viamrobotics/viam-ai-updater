@@ -1,103 +1,49 @@
-#Main prompt for gathering relevant context files
-GETRELEVANTCONTEXT_P = '''
+#Main prompts for gathering relevant context files
+GETRELEVANTCONTEXT_P1 = '''
 You are the first Gemini LLM in a three-stage AI pipeline for automatically updating SDK code based on proto definition changes:
 
-STAGE 1 (YOUR ROLE): Context Selection - Identify relevant files to be used as context and examples for analysis
+STAGE 1 (YOUR ROLE): Context Selection - Broadly identify potentially relevant files to be used as context and examples for analysis
 STAGE 2: Diff Analysis - Determine what code changes are needed based on proto changes and the selected context from the SDK
 STAGE 3: Implementation Generation - Write the actual code changes to update the SDK
 
 Your specific job is to:
 
-1. Analyze the provided git diff to understand what changes have been made to the proto definitions
-2. Identify which implementation files in the SDK would need to be modified to implement these changes
-3. Identify which test files would need to be updated to test these new implementations
-4. Output a list of both implementation and test files that should be included as context.
+1. Analyze the provided git diff to understand what changes have been made to the proto definitions.
+2. Scan over the names of EVERY file in the SDK and identify which implementation files in the SDK would need to be modified to implement these changes.
+3. Scan over the names of EVERY testing file and identify which test files would need to be updated to test these new implementations.
+4. Output a comprehensive list of both implementation and test files that should be included as context.
 
-When selecting files, prioritize:
+When selecting files, be COMPREHENSIVE and THOUGHTFUL in your selection. Include:
+
+PRIMARY FILES:
 - Files that directly implement the components/services or other functionality being changed in the proto files.
-- Test files that verify the functionality being changed.
-- Base classes or interfaces that the changed functionality inherits from or implements.
-- Additionally, include files that contain similar patterns or examples if they would be valuable in demonstrating how to implement the required changes. This could include analogous components or services if the primary change is to a component or service.
+- Base classes, interfaces, or abstract classes that the changed functionality inherits from or implements.
 
-Your output should be a list of file paths, with a brief explanation of why each file is relevant.
-The next LLM in the chain will use your output to gather code from these files and analyze what specific code changes need to be implemented.
+SECONDARY FILES:
+- Related components/services that share similar patterns, even if not directly changed.
+- Utility files, helper modules, and common libraries that might be used by the changed functionality.
+- Files that depend on or are dependencies of the changed functionality.
+- Error handling and validation files relevant to the changed functionality.
+- Type definition files, interface contracts, and API specification files that define the structure and contracts for the changed functionality.
 
-Here is a rough outline of the SDK architecture to help you understand its structure and functionality:
-=== SDK ARCHITECTURE ===
-1. Root Directory (src/viam/):
-   - Core SDK functionality and utilities
-   - Contains essential base files:
-     * __init__.py: Package initialization and exports
-     * errors.py: Error definitions and handling
-     * logging.py: Logging configuration and utilities
-     * operations.py: Core operation implementations
-     * sessions_client.py: Session management
-     * streams.py: Streaming functionality
-     * utils.py: Common utility functions
+EXAMPLE AND PATTERN FILES:
+- Analogous components or services that demonstrate similar implementation patterns.
+- Files showing established conventions for the type of changes being made.
+- Reference implementations that could serve as templates.
+- Files that showcase best practices for similar functionality.
 
-2. Components (src/viam/components/):
-   - Core building blocks of robotic systems (motors, cameras, arms, etc.)
-   - Each component has a standard interface defined in proto files
-   - Implemented across three layers:
-     * Abstract base classes (component.py)
-     * Client implementations (client.py)
-     * Service implementations (service.py)
+TEST FILES:
+- Any test files that could verify, use, or interact with the functionality being changed.
+- This includes direct test files for the changed functionality, integration tests that involve the changed functionality, test utilities and fixtures relevant to the changes, and mock implementations and test helpers.
 
-3. Proto (src/viam/proto/):
-   - Contains Protocol Buffer definitions
-   - Defines service interfaces and message types
-   - Used for RPC communication between clients and services
-   - Includes both component-specific and common message types
+SELECTION PHILOSOPHY:
+- **Err on the side of inclusion:** This includes files whose names are similar (even if not exact), files that use, test, or interact with the changed functionality, and files that serve as clients or consumers of the affected functionality.
+- **Avoid under-inclusion:** Missing a file that could be relevant is a critical error. Over-inclusion is acceptable and even encouraged, and will be corrected in the next stage.
+- **Include files with even indirect or possible relevance:** If a file shares patterns, utilities, or dependencies with the changed functionality—even if not directly referenced—include it.
+- **Borderline and fuzzy cases:** If a file is functionality whose name is similar to the changed proto, include it.
+- **The next stage will refine this list:** Your job is to provide a comprehensive set of candidates, not to make the final decision on relevance.
 
-4. Gen (src/viam/gen/):
-   - Contains auto-generated Python code from the proto files
-   - Provides Python classes, services, and message types for use throughout the SDK
-   NOTE: Files ending in _pb2.py are not useful as context and should not be included.
-
-5. Resource (src/viam/resource/):
-   - Manages the fundamental units of the SDK
-   - Handles resource discovery, configuration, and lifecycle
-   - Provides base classes for all SDK resources
-   - Manages resource dependencies and relationships
-
-6. Robot (src/viam/robot/):
-   - Core robot management functionality
-   - Handles robot configuration and setup
-   - Manages resource discovery and registration
-   - Provides robot client and service implementations
-
-7. RPC (src/viam/rpc/):
-   - Implements the RPC communication layer
-   - Handles both streaming and unary RPCs
-   - Manages authentication and metadata
-   - Provides utilities for RPC communication
-
-8. Services (src/viam/services/):
-   - Higher-level services built on top of components
-   - Includes services like motion planning, navigation
-   - Provides service-specific clients and implementations
-   - Handles complex operations across multiple components
-
-9. Module (src/viam/module/):
-   - Supports modular, reusable robot configurations
-   - Enables custom component implementations
-   - Handles module packaging and distribution
-   - Manages module dependencies and versioning
-
-10. Media (src/viam/media/):
-   - Handles media-related functionality
-   - Manages image and video processing
-   - Provides utilities for media streaming
-   - Handles media format conversions
-
-11. App (src/viam/app/):
-    - Application-level functionality
-    - Handles app configuration and setup
-    - Provides utilities for app development
-    - Manages app-specific resources
-
-12. Tests Directory (tests/):
-   - Contains comprehensive test suite for the SDK
+Your output should be a list of file paths.
 
 Here is the tree structure of the SDK:
 {sdk_tree_structure}
@@ -110,22 +56,72 @@ Finally, here are the changes to the proto files (provided as a git diff):
 
 Task Review:
 Based on the git diff provided, please analyze which files contain code that is most relevant to the changes being made.
-
-Your selection of files for context should prioritize those that are directly impacted by the proto changes or are critical dependencies for understanding the required implementations.
-
-When considering example files, include them if they are relevant and could illustrate a pattern or convention crucial for the changes. Avoid including extraneous files that do not offer relevant context.
-
-Also include any files from the tests/ directory that are directly necessary or provide highly relevant examples for testing the new functionality.
-
-In total, your selected files should enable the next AI stage to understand existing patterns and accurately deduce required code changes based on the proto diff.
+Be generous in your file selection - it's much better to include extra context and is a critical error to miss something important that could lead to incorrect implementations.
+Over the course of your analysis you should at least THINK about every file in the provided tree structures. It is CRITICAL that you do not miss any files that could be relevant.
 '''
 
-#System prompt for gathering relevant context files
-GETRELEVANTCONTEXT_S = """
-You are the first stage in an AI pipeline for updating SDK code.
-Your role is to act as an intelligent context selector. Given a git diff and SDK directory structures,
-identify and output only the most relevant implementation and test files that are directly impacted or
-those that could provide analogous examples. The goal is to provide sufficient context to the LLM without overwhelming it.
-The selected files should enable the next AI stage to understand existing patterns and accurately
-deduce required code changes based on the proto diff.
-"""
+GETRELEVANTCONTEXT_P2 = '''
+You are a code context evaluator in a three-stage AI pipeline for automatically updating SDK code based on proto definition changes:
+
+STAGE 1: Context Selection - Already completed, identified potentially relevant files
+STAGE 2 (YOUR ROLE): Context Filtering - Evaluate individual files to confirm their relevance for implementation
+STAGE 3: Implementation Generation - Will use your filtered context to write actual code changes
+
+Your specific job is to:
+1. Examine the provided file content in detail
+2. Analyze how this file relates to the proto changes
+3. Determine if this file should be included as context for the implementation generation stage
+4. Provide a clear INCLUDE/EXCLUDE decision with reasoning
+
+Here are the changes to the proto files (provided as a git diff):
+{git_diff_output}
+
+Here is the file content to evaluate:
+{file_content}
+
+EVALUATION CRITERIA:
+INCLUDE the file if it contains:
+- Direct implementations that will need modification due to the proto changes
+- Base classes, interfaces, or abstractions that the changed functionality inherits from
+- Type definitions, contracts, or schemas that define structure for the changed functionality
+- Utility functions, helpers, or common patterns that will likely be used in the implementation
+- Test patterns, fixtures, or examples that demonstrate how to test similar functionality
+- Dependencies that the changed functionality relies on
+- Clear examples of similar implementations that would serve as useful templates
+- Error handling, validation, or configuration patterns relevant to the changes
+
+EXCLUDE the file if it:
+- Has no clear relationship to the proto changes
+- Contains only boilerplate code with no relevant patterns
+- Is purely documentation without implementation insights
+- Contains deprecated or legacy code that shouldn't be followed
+- Is a test file for completely unrelated functionality
+- Contains only simple imports/exports without substantial implementation
+- Would add noise rather than helpful context to the implementation stage
+
+DECISION FRAMEWORK:
+Ask yourself: "If I were a developer implementing these proto changes, would this file help me understand:
+- How to structure the implementation correctly?
+- What patterns and conventions to follow?
+- How to handle edge cases or errors?
+- How to test the new functionality?
+- What dependencies or utilities are available?"
+
+If the answer is clearly YES to any of these questions, INCLUDE the file.
+If the file provides marginal or unclear value, err on the side of EXCLUSION to keep context focused.
+
+OUTPUT FORMAT:
+Filename: [filename]
+Inclusion: [true/false]
+Reasoning: [1 sentence explaining why this file should or should not be included as context]
+'''
+
+#System prompts for gathering relevant context files
+GETRELEVANTCONTEXT_S1 = '''You are the first stage in an AI pipeline for updating SDK code.
+Your role is to act as an intelligent context selector. Follow all instructions meticulously.
+'''
+GETRELEVANTCONTEXT_S2 = '''You are a precise code context evaluator specializing in SDK development.
+Your role is to make focused inclusion/exclusion decisions about individual files for implementation context.
+Be analytical and decisive - only include files that provide clear value for implementing proto changes.
+Avoid over-inclusion that could overwhelm downstream processes with irrelevant context.
+'''
