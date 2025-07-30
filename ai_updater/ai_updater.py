@@ -417,6 +417,7 @@ class AIUpdater:
                     git_diff_output = f.read()
         if git_diff_output == "":
             print("There were no proto changes detected that required an update to the SDK. Exiting.")
+            write_to_file(os.path.join(self.current_dir, "pr_summary.txt"), "No changes were needed to the SDK.", quiet=True)
             return
         if self.args.debug:
             if self.args.work:
