@@ -97,6 +97,7 @@ class AIUpdater:
                 response_schema=ContextFiles,
                 thinking_config=types.ThinkingConfig(thinking_budget=-1),
                 system_instruction=GETRELEVANTCONTEXT_S1,
+                seed=42
             )
         )
         print(f"Finished get_relevant_context stage 1. Gemini model used: {response.model_version}")
@@ -123,6 +124,7 @@ class AIUpdater:
                     system_instruction=GETRELEVANTCONTEXT_S2,
                     response_schema=ContextInclusion,
                     response_mime_type="application/json",
+                    seed=42
                 )
             ))
         file_analysis = await asyncio.gather(*file_analysis)
@@ -193,7 +195,8 @@ class AIUpdater:
             contents=prompt,
             config=types.GenerateContentConfig(
                 temperature=0.0,
-                thinking_config=types.ThinkingConfig(thinking_budget=-1)
+                thinking_config=types.ThinkingConfig(thinking_budget=-1),
+                seed=42
             )
         )
         self.total_cost += calculate_cost(response.usage_metadata, response.model_version)
@@ -238,6 +241,7 @@ class AIUpdater:
                             mode="ANY", allowed_function_names=["apply_patch"]
                         )
                     ),
+                    seed=42
                 )
             )
             self.total_cost += calculate_cost(response.usage_metadata, response.model_version)
@@ -303,6 +307,7 @@ class AIUpdater:
                 temperature=0.0,
                 thinking_config=types.ThinkingConfig(thinking_budget=0),
                 system_instruction=GENERATECOMPLETEFILE_S,
+                seed=42
             )
         )
 
@@ -352,6 +357,8 @@ class AIUpdater:
                 ai_file_path = os.path.join(original_file_dir, original_filename)
             if requires_creation:
                 self.generate_file(file_path=file_path, implementation_detail=implementation_detail, ai_file_path=ai_file_path)
+            elif not self.args.patch:
+                self.generate_file(file_path=file_path, implementation_detail=implementation_detail, ai_file_path=ai_file_path, fallback=True)
             else:
                 self.generate_patch(file_path=file_path, implementation_detail=implementation_detail, ai_file_path=ai_file_path)
         print(f"Finished applying changes. Gemini model used: gemini-2.5-flash")
@@ -442,6 +449,7 @@ def main():
     parser = argparse.ArgumentParser(description="Viam SDK AI Updater")
     parser.add_argument("--debug", action="store_true", help="Enable debug mode to print various helpful files")
     parser.add_argument("--noai", action="store_true", help="Disable AI (for testing)")
+    parser.add_argument("--patch", action="store_true", help="Attempt to apply patches to existing files")
     parser.add_argument("--sdk", type=str, help="The SDK that is being updated (currently supports python, cpp, typescript, flutter)")
     group = parser.add_mutually_exclusive_group(required=True)
     group.add_argument("--test", type=str, help="Enable when running tests. Supply path to root directory of desired test repo")
