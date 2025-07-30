@@ -92,7 +92,7 @@ class AIUpdater:
             model="gemini-2.5-flash",
             contents=prompt,
             config=types.GenerateContentConfig(
-                temperature=0.0,
+                temperature=0.1,
                 response_mime_type="application/json",
                 response_schema=ContextFiles,
                 thinking_config=types.ThinkingConfig(thinking_budget=-1),
@@ -119,7 +119,7 @@ class AIUpdater:
                 model="gemini-2.5-flash",
                 contents=prompt,
                 config=types.GenerateContentConfig(
-                    temperature=0.0,
+                    temperature=0.1,
                     thinking_config=types.ThinkingConfig(thinking_budget=-1),
                     system_instruction=GETRELEVANTCONTEXT_S2,
                     response_schema=ContextInclusion,
@@ -164,7 +164,7 @@ class AIUpdater:
             model="gemini-2.5-flash",
             contents=prompt,
             config=types.GenerateContentConfig(
-                temperature=0.0,
+                temperature=0.1,
                 response_mime_type="application/json",
                 response_schema=RequiredChanges,
                 thinking_config=types.ThinkingConfig(thinking_budget=-1),
@@ -194,7 +194,7 @@ class AIUpdater:
             model="gemini-2.5-flash-lite",
             contents=prompt,
             config=types.GenerateContentConfig(
-                temperature=0.0,
+                temperature=0.4,
                 thinking_config=types.ThinkingConfig(thinking_budget=-1),
                 seed=42
             )
