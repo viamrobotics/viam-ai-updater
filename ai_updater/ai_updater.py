@@ -167,6 +167,7 @@ class AIUpdater:
                 response_schema=RequiredChanges,
                 thinking_config=types.ThinkingConfig(thinking_budget=-1),
                 system_instruction=DIFFPARSER_S,
+                seed=42
             )
         )
 
