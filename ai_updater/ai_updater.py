@@ -12,7 +12,7 @@ from ai_updater_tools import apply_patch, apply_patch_declaration
 
 from prompts.getrelevantcontext_prompts import GETRELEVANTCONTEXT_P1, GETRELEVANTCONTEXT_P2, GETRELEVANTCONTEXT_S1, GETRELEVANTCONTEXT_S2
 from prompts.diffparser_prompts import DIFFPARSER_P, DIFFPARSER_S
-from prompts.applychanges_prompts import GENERATECOMPLETEFILE_P, GENERATECOMPLETEFILE_S, GENERATEPATCH_P, GENERATEPATCH_S
+from prompts.applychanges_prompts import GENERATECOMPLETEFILE_P, GENERATECOMPLETEFILE_S, GENERATEPATCH_P, GENERATEPATCH_S, GENERATESUMMARY_P
 
 class ContextFiles(BaseModel):
     """Model for storing the files that should be analyzed as potential context.
@@ -71,7 +71,7 @@ class AIUpdater:
         self.client = genai.Client(api_key=api_key)
         self.total_cost = 0.0
 
-    async def get_relevant_context(self, git_diff_output: str) -> list[ContextInclusion]:
+    async def get_relevant_context(self, git_diff_output: str, sdk_tree_output: str, tests_tree_output: str) -> list[ContextInclusion]:
         """Two stage approach to use AI to gather the most relevant context files.
         Stage 1: Gather all files that could be relevant to the changes.
         Stage 2: Asynchronous AI calls are made to analyze each file to determine if it is actually relevant as context.
@@ -82,9 +82,6 @@ class AIUpdater:
         Returns:
             list[ContextInclusion]: List of ContextInclusion objects containing relevant files
         """
-        sdk_tree_output = subprocess.check_output(["tree", os.path.join("src", "viam")], text=True, cwd=self.sdk_root_dir)
-        tests_tree_output = subprocess.check_output(["tree", "tests"], text=True, cwd=self.sdk_root_dir)
-
         prompt = GETRELEVANTCONTEXT_P1.format(
             sdk_tree_structure=sdk_tree_output,
             tests_tree_structure=tests_tree_output,
@@ -181,6 +178,26 @@ class AIUpdater:
                 write_to_file(os.path.join(self.current_dir, "getdiffanalysis.txt"), response.text, quiet=True)
         print(f"Finished get_diff_analysis. Gemini model used: {response.model_version}")
         return response
+
+    def generate_pr_summary(self, git_diff_output: str, diff_analysis: types.GenerateContentResponse):
+        """Generate a human-readable summary of the AI's updates to include in the PR.
+
+        Args:
+            git_diff_output (str): The original git diff output.
+            diff_analysis (types.GenerateContentResponse): The AI's analysis of required changes.
+        """
+        prompt = GENERATESUMMARY_P.format(git_diff_output=git_diff_output, diff_analysis_text=diff_analysis.text)
+        response = self.client.models.generate_content(
+            model="gemini-2.5-flash-lite",
+            contents=prompt,
+            config=types.GenerateContentConfig(
+                temperature=0.0,
+                thinking_config=types.ThinkingConfig(thinking_budget=-1)
+            )
+        )
+        self.total_cost += calculate_cost(response.usage_metadata, response.model_version)
+        write_to_file(os.path.join(self.current_dir, "pr_summary.txt"), response.text, quiet=True)
+        print(f"Finished generating PR summary. Gemini model used: {response.model_version}")
 
     def generate_patch(self, file_path: str, implementation_detail: str, ai_file_path: str):
         """Attemps to apply the AI suggested changes to a single file. If the patch generation fails,
@@ -338,11 +355,59 @@ class AIUpdater:
                 self.generate_patch(file_path=file_path, implementation_detail=implementation_detail, ai_file_path=ai_file_path)
         print(f"Finished applying changes. Gemini model used: gemini-2.5-flash")
 
+    def configure_sdk_specifics(self, sdk: str) -> dict:
+        """Configure the AI updater for a specific SDK.
+
+        Args:
+            sdk: The SDK that is being updated (currently supports python, cpp, typescript, flutter)
+
+        Returns:
+            dict: A dictionary containing the SDK-specific configuration
+        """
+        git_diff_output = ""
+        sdk_tree_output = ""
+        tests_tree_output = ""
+        if sdk == "python":
+            git_diff_dir = os.path.join("src", "viam", "gen")
+            git_diff_output = subprocess.check_output(["git", "diff", "HEAD~1", "HEAD", "--", git_diff_dir, ":!*_pb2.py"], text=True, cwd=self.sdk_root_dir)
+            sdk_tree_output = subprocess.check_output(["tree", os.path.join("src", "viam")], text=True, cwd=self.sdk_root_dir)
+            tests_tree_output = subprocess.check_output(["tree", "tests"], text=True, cwd=self.sdk_root_dir)
+        elif sdk == "cpp":
+            git_diff_dir = os.path.join("src", "viam", "api")
+            diff_exclude_files = [":!*.cc", ":!src/viam/api/api_proto_tag.lock", ":!src/viam/api/buf.lock", ":!src/viam/api/buf.yaml", ":!src/viam/api/CMakeLists.txt", ":!src/viam/api/viamcppsdk_replace_switch.cmake"]
+            git_diff_command = ["git", "diff", "HEAD~1", "HEAD", "--", git_diff_dir] + diff_exclude_files
+            git_diff_output = subprocess.check_output(git_diff_command, text=True, cwd=self.sdk_root_dir)
+            sdk_tree_output = subprocess.check_output(["tree", os.path.join("src", "viam", "sdk")], text=True, cwd=self.sdk_root_dir)
+            tests_tree_output = "\nFor the C++ SDK, the tests are included in the sdk/tests directory so the tree will not be resupplied here."
+        elif sdk == "flutter":
+            git_diff_dir = os.path.join("lib", "src", "gen")
+            git_diff_output = subprocess.check_output(["git", "diff", "HEAD~1", "HEAD", "--", git_diff_dir], text=True, cwd=self.sdk_root_dir)
+            sdk_tree_output = subprocess.check_output(["tree", os.path.join("lib", "src"), "-I", "gen"], text=True, cwd=self.sdk_root_dir)
+            tests_tree_output = subprocess.check_output(["tree", "test"], text=True, cwd=self.sdk_root_dir)
+        elif sdk == "typescript":
+            current_commit = subprocess.check_output(["git", "rev-parse", "HEAD"], text=True, cwd=self.sdk_root_dir).strip()
+            subprocess.check_output(["git", "checkout", "HEAD~1"], cwd=self.sdk_root_dir)
+            subprocess.check_output(["make", "build-buf"], cwd=self.sdk_root_dir)
+            subprocess.check_output(["mv", "src/gen", "../HEAD-1"], cwd=self.sdk_root_dir)
+            subprocess.check_output(["git", "checkout", current_commit], cwd=self.sdk_root_dir)
+            subprocess.check_output(["make", "build-buf"], cwd=self.sdk_root_dir)
+            subprocess.check_output(["mv", "src/gen", "../HEAD"], cwd=self.sdk_root_dir)
+            git_diff_output = subprocess.run(["diff", "-r", "-u", "--exclude='.*'", "../HEAD-1", "../HEAD"], text=True, capture_output=True, cwd=self.sdk_root_dir).stdout
+            sdk_tree_output = subprocess.check_output(["tree", "src"], text=True, cwd=self.sdk_root_dir)
+            tests_tree_output = "\nFor the Typescript SDK, the tests are included within the src directory (as .spec.ts files)."
+            subprocess.check_output(["rm", "-rf", "../HEAD-1", "../HEAD"], cwd=self.sdk_root_dir)
+        else:
+            raise ValueError(f"Invalid SDK: {sdk}. The AI updater currently only supports python, cpp, typescript, and flutter.")
+        return {"git_diff_output": git_diff_output, "sdk_tree_output": sdk_tree_output, "tests_tree_output": tests_tree_output}
+
     async def run(self):
         """Main execution method for the AI updater."""
         # Get diff and output (and write to file for debugging)
         # Note: the way I am currently doing git diff excludes the _pb2.py files because it clutters the diff and confuses the LLM
-        git_diff_dir = os.path.join(self.sdk_root_dir, "src", "viam", "gen")
+        sdk_config = self.configure_sdk_specifics(self.args.sdk)
+        git_diff_output = sdk_config["git_diff_output"]
+        sdk_tree_output = sdk_config["sdk_tree_output"]
+        tests_tree_output = sdk_config["tests_tree_output"]
 
         if self.args.test:
             # Check if specific proto diff file was specified for testing reasons
@@ -350,28 +415,20 @@ class AIUpdater:
             if os.path.exists(os.path.join(scenario_dir, "proto_diff.txt")):
                 with open(os.path.join(scenario_dir, "proto_diff.txt"), "r") as f:
                     git_diff_output = f.read()
-            else:
-                git_diff_output = subprocess.check_output(["git", "diff", "HEAD~1", "HEAD", "--", git_diff_dir, ":!*_pb2.py"],
-                                                        text=True,
-                                                        cwd=self.sdk_root_dir)
-        elif self.args.work:
-            git_diff_output = subprocess.check_output(["git", "diff", "HEAD~1", "HEAD", "--", git_diff_dir, ":!*_pb2.py"],
-                                                  text=True,
-                                                  cwd=self.sdk_root_dir)
-
         if git_diff_output == "":
             print("There were no proto changes detected that required an update to the SDK. Exiting.")
             return
-
         if self.args.debug:
             if self.args.work:
                 print(f"Git diff output: {git_diff_output}")
             elif self.args.test:
                 write_to_file(os.path.join(self.current_dir, "gitdifftest.txt"), git_diff_output, quiet=True)
 
-        relevant_context = await self.get_relevant_context(git_diff_output)
+        relevant_context = await self.get_relevant_context(git_diff_output, sdk_tree_output, tests_tree_output)
 
         diff_analysis = self.get_diff_analysis(git_diff_output, relevant_context)
+
+        self.generate_pr_summary(git_diff_output, diff_analysis)
 
         if not self.args.noai:
             self.apply_changes(diff_analysis)
@@ -383,6 +440,7 @@ def main():
     parser = argparse.ArgumentParser(description="Viam SDK AI Updater")
     parser.add_argument("--debug", action="store_true", help="Enable debug mode to print various helpful files")
     parser.add_argument("--noai", action="store_true", help="Disable AI (for testing)")
+    parser.add_argument("--sdk", type=str, help="The SDK that is being updated (currently supports python, cpp, typescript, flutter)")
     group = parser.add_mutually_exclusive_group(required=True)
     group.add_argument("--test", type=str, help="Enable when running tests. Supply path to root directory of desired test repo")
     group.add_argument("--work", type=str, help="Enable when running in workflow. Supply path to root direcory repo to be updated")
