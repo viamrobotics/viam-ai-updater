@@ -3,7 +3,7 @@ Current home for the Viam SDK AI Updater
 
 ## Project Overview
 
-This repository houses an AI-powered updater for the Viam SDKs. Its primary purpose is to automatically analyze protobuf definition changes (proto diffs) and generate corresponding updates to the Viam SDK's code and tests (more functionality to come).
+This repository houses an AI-powered updater for the Viam SDKs. Its primary purpose is to automatically analyze protobuf definition changes as a git diff and generate corresponding updates to the Viam SDK's code and tests (more functionality to come).
 
 ## GitHub Actions Workflow Usage
 
@@ -14,6 +14,7 @@ This repository includes a reusable GitHub Actions workflow (`.github/workflows/
 The workflow is triggered by `workflow_call` and expects the following inputs:
 
 *   `target_branch` (required): The branch in the calling SDK repository that needs to be updated.
+*   `sdk` (required): The language of the calling SDK repository that needs to be updated (currently supports `python`, `typescript`, `cpp`, `flutter`)
 
 And the following secrets:
 
@@ -81,6 +82,8 @@ The `ai_updater.py` script can be run in two primary modes: for testing against 
 
 *   `--debug`: (Optional) Enable debug mode to print various helpful files and additional logging.
 *   `--noai`: (Optional) Disable AI model calls (useful for testing the script's logic without incurring API costs).
+*   `--patch`: (Optional) Attempt to apply changes as patches to existing files rather than regenerating the entire file. If patching fails, the file will be regenerated.
+*   `--sdk <sdk_name>`: (Required) Specify the SDK that is being updated. Currently supports `python`, `cpp`, `typescript`, and `flutter`.
 *   `--test <path_to_test_repo>`: (Mutually Exclusive with `--work`) Enable test mode. Supply the path to the root directory of the test repository.
 *   `--work <path_to_sdk_repo>`: (Mutually Exclusive with `--test`) Enable workflow mode. Supply the path to the root directory of the SDK repository that is being updated.
 
