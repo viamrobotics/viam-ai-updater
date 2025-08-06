@@ -19,6 +19,7 @@ The workflow is triggered by `workflow_call` and expects the following inputs:
 And the following secrets:
 
 *   `GOOGLE_API_KEY`: A Google Generative AI API key.
+*   `GIT_ACCESS_TOKEN`: Viam Git Access Token. This will cause the AI generated PR to be made by 'viambot' so CI tests will automatically run.
 
 ### Example Calling Workflow (in the SDK Repository)
 
@@ -43,6 +44,7 @@ jobs:
           target_branch: ${{ github.ref_name }} # Passes the current branch name of the SDK repo
         secrets:
           GOOGLE_API_KEY: ${{ secrets.GOOGLE_API_KEY }}
+          GIT_ACCESS_TOKEN: ${{ secrets.GIT_ACCESS_TOKEN }}
 ```
 
 
@@ -66,12 +68,11 @@ To set up your local development environment, follow these steps:
     ```bash
     source .venv/bin/activate
     ```
-    Your terminal prompt should now indicate that the virtual environment is active (e.g., `(.venv) your-username@your-machine viam-ai-updater %`).
 
 4.  **Install Dependencies:**
-    Install the required Python packages using `uv pip install -r requirements.txt` from the `requirements.txt` file.
+    Install the required Python packages using `pip install -r requirements.txt` from the `requirements.txt` file.
     ```bash
-    uv pip install -r requirements.txt
+    pip install -r requirements.txt
     ```
 
 ## Running the AI Updater Script
