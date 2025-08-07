@@ -1,17 +1,4 @@
 '''
-Proto update hashes to use as test cases:
-    1. Added new method to component: 8d6b63a0fade65b8054cafb849d844bcdb089761
-        Merged Implementation: 11dab7c500de784a431ea771709c6adbef69e06b
-    2. Added new field to app client: ef8ae496df44a8e881836e76e7e953ed5e6bbd4c
-        Merged Implementation: 8c0fc88a80c1ac5d61acc7d523c0bb9443acf0b4
-    3. Added entire new components (Button and Switch): e8818bce81be520a740bf3da725c8d816fe2aa4b
-        Merged Implementation (Button): dee3547b0c98c2c2fd7fbdd2b239899e5d031795
-        Merged Implementation (Switch): 096a5083f0d2c8b1152e8aa3b6ed233b1af60623
-    4. Updated a version number: cd8765e9b2d6adcdeb7ecda6c2b72940d4439d0a
-        No merged implementation because no changes need to be made.
-'''
-
-'''
 NOTE: The AI updater is inherently nondeterministic and hard to quantitatively test with a testing suite.
 While the following tests have basic assertions to ensure the AI generated certain files, they do not ensure that the AI generated the correct code.
 The recommended method of testing is to run these tests and manually inspect the AI generated results compared to the expected human implementation.
@@ -65,7 +52,7 @@ SCENARIOS = [
     {
         "name": "scenario-5",
         "description": "Single field update that leads to many small changes in long file",
-        "pre_implementation_commit": "7e92b134e5440f5aed861d1117ec31de118a70c9",
+        "pre_implementation_commit": "fd42ab2a2196904bef7ba92fee0fdbb341aca1b3",
         "specific_proto_diff_file": True,
         "sdk": "python",
         "repo_url": "git@github.com:viamrobotics/viam-python-sdk.git"
@@ -141,6 +128,6 @@ def _run_test_scenario(scenario, skip_comparison=True):
 
 if __name__ == "__main__":
     print("Running all scenarios for debugging...")
-    for scenario in SCENARIOS[5:]: #change this to run specific scenarios if desired
+    for scenario in SCENARIOS[4:]: #change this to run specific scenarios if desired
         print(f"Running scenario: {scenario['name']}")
         _run_test_scenario(scenario) # skip_comparison defaults to True for standalone run

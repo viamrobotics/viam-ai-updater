@@ -13,35 +13,57 @@ Your specific job is to:
 3. Scan over the names of EVERY testing file and identify which test files would need to be updated to test these new implementations.
 4. Output a comprehensive list of both implementation and test files that should be included as context.
 
-When selecting files, be COMPREHENSIVE and THOUGHTFUL in your selection. Include:
+FILE SELECTION TARGETS:
+- **Typical range**: Aim for 20-40 files for most proto changes
+- **Small changes** (single component/service): Target 20-30 files
+- **Large changes** (multiple subsystems): May require 40-60 files
+- **Major architectural changes**: Could justify 60+ files, but ensure each adds clear value
 
-PRIMARY FILES:
+When selecting files, prioritize by relevance tier and be THOUGHTFUL in your selection:
+
+**TIER 1 - CRITICAL (Always include these)**:
 - Files that directly implement the components/services or other functionality being changed in the proto files.
 - Base classes, interfaces, or abstract classes that the changed functionality inherits from or implements.
 
-SECONDARY FILES:
-- Related components/services that share similar patterns, even if not directly changed.
-- Utility files, helper modules, and common libraries that might be used by the changed functionality.
+**TIER 2 - IMPORTANT (Include if clearly related)**:
 - Files that depend on or are dependencies of the changed functionality.
-- Error handling and validation files relevant to the changed functionality.
 - Type definition files, interface contracts, and API specification files that define the structure and contracts for the changed functionality.
+- Error handling and validation files directly relevant to the changed functionality.
 
-EXAMPLE AND PATTERN FILES:
+**TIER 3 - USEFUL (Include selectively)**:
+- Related components/services that share similar patterns, demonstrating established conventions.
 - Analogous components or services that demonstrate similar implementation patterns.
-- Files showing established conventions for the type of changes being made.
-- Reference implementations that could serve as templates.
-- Files that showcase best practices for similar functionality.
+- Reference implementations that could serve as templates for the specific type of changes being made.
 
-TEST FILES:
-- Any test files that could verify, use, or interact with the functionality being changed.
-- This includes direct test files for the changed functionality, integration tests that involve the changed functionality, test utilities and fixtures relevant to the changes, and mock implementations and test helpers.
+**TIER 4 - PERIPHERAL (Include sparingly)**:
+- Utility files, helper modules, and common libraries that might be used by the changed functionality.
+- Files that showcase best practices for similar functionality, but aren't directly analogous.
+
+**TEST FILES (Include relevant ones from all tiers)**:
+- Direct test files for the changed functionality.
+- Integration tests that involve the changed functionality.
+- Test utilities and fixtures directly relevant to the changes.
+- Mock implementations and test helpers for the specific functionality.
 
 SELECTION PHILOSOPHY:
-- **Err on the side of inclusion:** This includes files whose names are similar (even if not exact), files that use, test, or interact with the changed functionality, and files that serve as clients or consumers of the affected functionality.
-- **Avoid under-inclusion:** Missing a file that could be relevant is a critical error. Over-inclusion is acceptable and even encouraged, and will be corrected in the next stage.
-- **Include files with even indirect or possible relevance:** If a file shares patterns, utilities, or dependencies with the changed functionality—even if not directly referenced—include it.
-- **Borderline and fuzzy cases:** If a file is functionality whose name is similar to the changed proto, include it.
-- **The next stage will refine this list:** Your job is to provide a comprehensive set of candidates, not to make the final decision on relevance.
+- **Quality over quantity**: Each file should provide clear value for understanding how to implement the proto changes.
+- **Relevance over completeness**: Better to miss a tangentially related file than to include many irrelevant ones.
+- **Focus on patterns**: Include files that demonstrate the specific patterns and conventions needed for the changes.
+
+AVOID OVER-INCLUSION:
+- **Don't include entire directories** just because one file is relevant.
+- **Don't include every utility file** just because one might be used.
+- **Don't include test files for completely unrelated components** unless they demonstrate directly applicable patterns.
+- **Don't include files just for their similar names** unless they share actual implementation patterns.
+- **Don't include every file that imports/uses a changed component** unless they demonstrate how to properly integrate with it.
+
+SMART SELECTION CRITERIA:
+- **Path similarity**: Files in the same directory structure as proto changes are more likely to be relevant.
+- **Naming patterns**: Files with names closely matching the changed proto components.
+- **Functional similarity**: Files implementing similar operations or patterns to what's being changed.
+- **Direct dependencies**: Files that will definitely need updates due to the proto changes.
+
+- **The next stage will refine this list:** Your job is to provide a well-curated set of candidates that balance comprehensiveness with relevance.
 
 Your output should be a list of file paths.
 
@@ -56,8 +78,9 @@ Finally, here are the changes to the proto files (provided as a git diff):
 
 Task Review:
 Based on the git diff provided, please analyze which files contain code that is most relevant to the changes being made.
-Be generous in your file selection - it's much better to include extra context and is a critical error to miss something important that could lead to incorrect implementations.
-Over the course of your analysis you should at least THINK about every file in the provided tree structures. It is CRITICAL that you do not miss any files that could be relevant.
+Prioritize files by their relevance tier and aim for a focused selection that provides comprehensive context without overwhelming the next stage.
+Consider the scope of the proto changes and adjust your file count accordingly - smaller changes need fewer context files.
+Over the course of your analysis you should think about every file in the provided tree structures, but only include those that provide clear value for implementing these specific proto changes.
 '''
 
 GETRELEVANTCONTEXT_P2 = '''
