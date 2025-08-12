@@ -33,7 +33,7 @@ jobs:
       - name: Checkout ai_updater
         uses: actions/checkout@v4
         with:
-          repository: gabegottlob/viam-ai-updater
+          repository: viamrobotics/viam-ai-updater
           path: viam-ai-updater
           token: ${{ secrets.GITHUB_TOKEN }}
 
@@ -87,7 +87,7 @@ jobs:
 
             **Summary of Changes:**
             ${{ steps.ai-updater.outputs.ai_summary }}
-          assignees: gabegottlob
-          reviewers: gabegottlob
+          assignees: viamrobotics/sdk-netcode
+          reviewers: viamrobotics/sdk-netcode
           token: ${{ secrets.GIT_ACCESS_TOKEN }}
           draft: true
