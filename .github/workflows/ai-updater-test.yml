@@ -45,6 +45,7 @@ jobs:
       - name: Install uv
         uses: astral-sh/setup-uv@v3
         with:
+          python-version: "3.13"
           enable-cache: false
 
       - name: Setup Python
@@ -74,7 +75,7 @@ jobs:
         id: cpr
         uses: peter-evans/create-pull-request@v7
         with:
-          commit-message: '[WORKFLOW] AI update based on proto changes from commit ${{ github.event.head_commit.id }}'
+          commit-message: "[WORKFLOW] AI update based on proto changes from commit ${{ github.event.head_commit.id }}"
           path: sdk
           branch: workflow/ai-updater
           delete-branch: true
