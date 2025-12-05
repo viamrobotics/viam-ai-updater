@@ -1,0 +1,24 @@
+[project]
+name = "ai-updater"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+authors = [
+    { name = "Naveed Jooma", email = "naveed@viam.com" }
+]
+requires-python = ">=3.13"
+dependencies = [
+    "google-genai>=1.53.0",
+]
+
+[project.scripts]
+ai-updater = "ai_updater:main"
+
+[build-system]
+requires = ["uv_build>=0.9.15,<0.10.0"]
+build-backend = "uv_build"
+
+[dependency-groups]
+dev = [
+    "ruff>=0.14.8",
+]
