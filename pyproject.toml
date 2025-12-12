@@ -8,6 +8,7 @@ authors = [
 ]
 requires-python = ">=3.13"
 dependencies = [
+    "anthropic>=0.75.0",
     "google-genai>=1.53.0",
 ]
 

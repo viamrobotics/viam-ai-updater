@@ -4,6 +4,7 @@ import os
 
 from ai_updater.clients.base import Client
 from ai_updater.clients.google import Google as GoogleClient
+from ai_updater.clients.anthropic import Antrhopic as AnthropicClient
 
 
 def main():
@@ -39,7 +40,10 @@ def main():
 
     args = parser.parse_args()
 
-    API_KEY_VARS: dict[str, Client] = {"GOOGLE_API_KEY": GoogleClient}
+    API_KEY_VARS: dict[str, Client] = {
+        "GOOGLE_API_KEY": GoogleClient,
+        "ANTRHOPIC_API_KEY": AnthropicClient,
+    }
 
     client: Client | None = None
     for env_var, ClientConstructor in API_KEY_VARS.items():
