@@ -1,6 +1,6 @@
 #Main prompts for gathering relevant context files
 GETRELEVANTCONTEXT_P1 = '''
-You are the first Gemini LLM in a three-stage AI pipeline for automatically updating SDK code based on proto definition changes:
+You are the first stage in a three-stage AI pipeline for automatically updating SDK code based on proto definition changes:
 
 STAGE 1 (YOUR ROLE): Context Selection - Broadly identify potentially relevant files to be used as context and examples for analysis
 STAGE 2: Diff Analysis - Determine what code changes are needed based on proto changes and the selected context from the SDK
