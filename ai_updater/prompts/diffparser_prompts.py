@@ -45,6 +45,9 @@ IMPORTANT: Never suggest any changes to auto-generated files.
 - Complete file structure
 - All classes, methods, and functions that need to be implemented
 - Follow patterns from similar existing files shown in the context
+- If working in the C++ SDK, never create a new file for a component/service that does not yet exist.
+C++ SDK is relatively more complex to create new files, and should be done manually as the AI generated
+ones are almost never usable. 
 
 ## ANALYSIS APPROACH:
 
