@@ -2,7 +2,7 @@ annotated-types==0.7.0
 anyio==4.14.2
 attrs==25.3.0
 cachetools==5.5.2
-certifi==2025.7.14
+certifi==2026.10.19
 charset-normalizer==3.4.2
 fuzzysearch==0.8.0
 google-auth==2.40.3
